@@ -35,10 +35,9 @@ def main():
 
     print(banner('Totals'))
     activity = fb.activity()
-    for act_p in activity:
-        print('Number of messages {}: {} ({} %)'.format(act_p,
-                                                        activity[act_p][0],
-                                                        activity[act_p][1]))
+    for i, (act_p, data) in enumerate(activity.items(), 1):
+        print('{}. {}: {} ({} %)'.format(i, act_p, data[0], data[1]))
+
     nbr_days = fb.get_nbr_days()
     print('Number of days: {}'.format(nbr_days))
     print('Number of messages: {}'.format(fb.get_nbr_msg()))

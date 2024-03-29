@@ -149,10 +149,14 @@ class FacebookMessengerConversation():
                 act[message['sender_name']] += 1
             except KeyError:
                 pass
-        for key in act:
-            nbr_msg_p = act[key]
-            act[key] = [nbr_msg_p, 100*round(nbr_msg_p/nbr_msg, 2)]
-        return act
+        
+        # Sort the dictionary by the number of messages sent (nbr_msg_p) in descending order
+        act_sorted = dict(sorted(act.items(), key=lambda item: item[1], reverse=True))
+
+        for key in act_sorted:
+            nbr_msg_p = act_sorted[key]
+            act_sorted[key] = [nbr_msg_p, 100*round(nbr_msg_p/nbr_msg, 2)]
+        return act_sorted
 
     def timeline(self):
         """Fetches data when messages are sent.
