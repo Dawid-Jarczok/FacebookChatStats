@@ -2,3 +2,4 @@
 *.py[cod]
 chats/
 results/
+raw-chats/
