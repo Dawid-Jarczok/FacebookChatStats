@@ -1,3 +1,4 @@
+import os
 import sys
 import numpy as np
 from datetime import datetime
@@ -19,7 +20,7 @@ def main():
     if len(sys.argv) == 2:
          path_to_conversation = str(sys.argv[1])
     else:
-        print('Usage: python3 {} /Path/To/Conversation.json'
+        print('Usage: python3 {} chats/Conversation.json'
         .format(sys.argv[0]))
         sys.exit()
 
@@ -55,21 +56,14 @@ def main():
         name = p.split(' ')
         names += '{}_{}_'.format(name[0], name[1])
     names = names[:-1]
-    filename = '{}_{}_{}.pdf'.format(names,
-                                     start[0:10].replace('-', ''),
-                                     end[0:10].replace('-',''))
-    if len(filename) > 255:
-        filename = '{}_{}_{}.pdf'.format(fb.title.replace(' ','_'),
-                                         start[0:10].replace('-', ''),
-                                         end[0:10].replace('-',''))
-        if len(filename) > 255:
-            filename = '{}_{}_{}.pdf'.format('facebook_chat_statistics',
-                                             start[0:10].replace('-', ''),
-                                             end[0:10].replace('-',''))
+    filename = os.path.splitext(os.path.basename(sys.argv[1]))[0] + '.pdf'
 
     # Generate PDF
-    with PdfPages(filename) as pdf:
+    with PdfPages(os.path.join('results', filename)) as pdf:
         # Plot percentage
+        # Set a wider range of colors for the color cycle
+        colors = plt.cm.tab20(np.linspace(0, 1, 20))
+        plt.gca().set_prop_cycle('color', colors)
         fracs = [activity[act_p][0] for act_p in activity]
         plt.pie(fracs, startangle=90, autopct='%1.1f%%')
         plt.legend(participants,
@@ -128,6 +122,7 @@ def main():
 
         # Plot top emojis
         plt.rcParams['font.family'] = 'Segoe UI Emoji'
+        plt.gca().set_prop_cycle('color', colors)
 
         top_emojis, emoji_count_p = fb.top_emojis(nbr_of_top_emojis)
         x = np.arange(len(top_emojis))
