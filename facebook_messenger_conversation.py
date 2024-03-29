@@ -211,10 +211,10 @@ class FacebookMessengerConversation():
                 these were sent by each participant.
 
         """
-        emojis = {e: 0 for e in iter(emoji.UNICODE_EMOJI['en'].values())}
+        emojis = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
         emojis_p = {p: 0 for p in self.p}
         for p in emojis_p:
-            emojis_p[p] = {e: 0 for e in iter(emoji.UNICODE_EMOJI['en'].values())}
+            emojis_p[p] = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
         for message in self.data['messages']:
             if 'content' in message:
                 msg = message['content']

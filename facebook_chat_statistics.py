@@ -10,7 +10,6 @@ from facebook_messenger_conversation import FacebookMessengerConversation
 
 warnings.filterwarnings('ignore', module='matplotlib')
 
-
 def main():
     """
     Fetches and prints statistics of a Facebook Messenger
@@ -103,19 +102,13 @@ def main():
         pdf.savefig()
         plt.close()
 
-        # Plot by hour
+         # Plot by hour
         hour = list(range(24))
         plt.bar(hour, nbr_times_hour, align='center', width=0.8)
-        plt.title('Activity by Day')
+        plt.title('Activity by Hour')
         plt.xlabel('Hour of the day')
         plt.ylabel('Number of messages')
-        ax = plt.axes()
-        ax.yaxis.grid(linestyle='--')
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['bottom'].set_linewidth(0.5)
-        ax.spines['left'].set_linewidth(0.5)
-        fig = plt.figure(1)
+        plt.grid(True)
         plt.tight_layout()
         pdf.savefig()
         plt.close()
@@ -126,39 +119,35 @@ def main():
         weekday_arr = np.arange(len(weekday_labels))
         plt.bar(weekday_arr, nbr_times_weekday, align='center', width=0.8)
         plt.xticks(weekday_arr, weekday_labels, rotation=30)
-        plt.title('Activity by Week')
+        plt.title('Activity by Weekday')
         plt.ylabel('Number of messages')
-        ax = plt.axes()
-        ax.yaxis.grid(linestyle='--')
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['bottom'].set_linewidth(0.5)
-        ax.spines['left'].set_linewidth(0.5)
-        fig = plt.figure(1)
+        plt.grid(True)
         plt.tight_layout()
         pdf.savefig()
         plt.close()
 
-        # Plot top emojies
+        # Plot top emojis
+        plt.rcParams['font.family'] = 'Segoe UI Emoji'
+
         top_emojis, emoji_count_p = fb.top_emojis(nbr_of_top_emojis)
         x = np.arange(len(top_emojis))
-        plt.bar(x, emoji_count_p[participants[0]], align='center', width=0.8)
-        emoji_sum = emoji_count_p[participants[0]]
-        for i in range(1, len(participants)):
-            plt.bar(x, emoji_count_p[participants[i]],
-                    align='center', width=0.8, bottom=emoji_sum)
-            emoji_sum = [x + y for x, y in zip(emoji_sum, emoji_count_p[participants[i]])]
+        bar_width = 0.8 / len(participants)  # Calculate the width of each bar
+
+        for i, participant in enumerate(participants):
+            # Calculate the x values for the current participant
+            x_offset = i * bar_width - (0.4 - bar_width / 2)
+            plt.bar(x + x_offset, emoji_count_p[participant], align='center', width=bar_width, label=participant)
+
         plt.xticks(x, top_emojis)
         plt.title('Top 10 emojis')
         plt.ylabel('Number of times used')
-        plt.legend(participants)
-        ax = plt.axes()
+        plt.legend()
+        ax = plt.gca()  # Get the current Axes instance
         ax.yaxis.grid(linestyle='--')
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['bottom'].set_linewidth(0.5)
         ax.spines['left'].set_linewidth(0.5)
-        fig = plt.figure(1)
         plt.tight_layout()
         pdf.savefig()
         plt.close()
