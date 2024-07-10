@@ -8,6 +8,7 @@ import matplotlib.dates as mdates
 from matplotlib.backends.backend_pdf import PdfPages
 import warnings
 from facebook_messenger_conversation import FacebookMessengerConversation
+from progress_bar import ProgressBar
 
 warnings.filterwarnings('ignore', module='matplotlib')
 
@@ -52,7 +53,29 @@ def main():
     print('Average length of messages: {} words'.format(fb.get_avg_len_msg()))
     print('Average messages per day: {}'.format(fb.get_avg_msg_day()))
 
+    timeline, nbr_times_day, nbr_times_weekday, nbr_times_hour = fb.timeline()
+    print('Most messages in one day: {}'.format(max(nbr_times_day)))
+
+    # Emojis
+    print(banner('Emojis'))
+    top_emojis, emoji_count_p, emojis_all_count = fb.top_emojis(nbr_of_top_emojis)
+    for i, p in enumerate(participants, 1):
+        print('{}. {}:\t{}'.format(i, p, emojis_all_count[p]))
+
+    print('Top {} emojis: {}'.format(nbr_of_top_emojis, top_emojis))
+
+    # Reactions emojis
+    print(banner('Reactions emojis'))
+    top_reactions_emojis, emoji_reactions_count_p, emojis_reactions_all_count = fb.top_reactions_emojis(nbr_of_top_emojis)
+    for i, p in enumerate(participants, 1):
+        print('{}. {}:\t{}'.format(i, p, emojis_reactions_all_count[p]))
+
+    print('Top {} reactions emojis: {}'.format(nbr_of_top_emojis, top_reactions_emojis))
+
+    # Generate PDF
     print(banner('Plots'))
+    print('Generating PDF')
+    pb = ProgressBar(10, prefix = 'Progress:', suffix = 'Complete', length = 50)
 
     # Set appropriate filename
     names = ''
@@ -62,9 +85,8 @@ def main():
     names = names[:-1]
     filename = os.path.splitext(os.path.basename(sys.argv[1]))[0] + '.pdf'
 
-    # Generate PDF
     with PdfPages(os.path.join('results', filename)) as pdf:
-        # Plot percentage
+        # Plot messages percentage
         # Set a wider range of colors for the color cycle
         colors = plt.cm.tab20(np.linspace(0, 1, 20))
         plt.gca().set_prop_cycle('color', colors)
@@ -74,12 +96,27 @@ def main():
                    loc='upper left',
                    bbox_to_anchor=(-0.15, 1.15))
         plt.axis('equal')
-        plt.title('Who texts the most?')
+        plt.title('Messages')
         pdf.savefig()
         plt.close()
+        pb.printProgressBar()
+
+        # Plot words percentage
+        # Set a wider range of colors for the color cycle
+        colors = plt.cm.tab20(np.linspace(0, 1, 20))
+        plt.gca().set_prop_cycle('color', colors)
+        fracs = [100*nbr_words_p[p]/nbr_words for p in participants]
+        plt.pie(fracs, startangle=90, autopct='%1.1f%%')
+        plt.legend(participants,
+                   loc='upper left',
+                   bbox_to_anchor=(-0.15, 1.15))
+        plt.axis('equal')
+        plt.title('Words')
+        pdf.savefig()
+        plt.close()
+        pb.printProgressBar()
 
         # Plot timeline
-        timeline, nbr_times_day, nbr_times_weekday, nbr_times_hour = fb.timeline()
         months = nbr_days/30
         interval = int(round(months/12))
         fmt = mdates.DateFormatter('%Y-%m-%d')
@@ -99,6 +136,7 @@ def main():
         plt.tight_layout()
         pdf.savefig()
         plt.close()
+        pb.printProgressBar()
 
          # Plot by hour
         hour = list(range(24))
@@ -110,6 +148,7 @@ def main():
         plt.tight_layout()
         pdf.savefig()
         plt.close()
+        pb.printProgressBar()
 
         # Plot by weekday
         weekday_labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
@@ -123,12 +162,12 @@ def main():
         plt.tight_layout()
         pdf.savefig()
         plt.close()
+        pb.printProgressBar()
 
         # Plot top emojis
         plt.rcParams['font.family'] = 'Segoe UI Emoji'
         plt.gca().set_prop_cycle('color', colors)
 
-        top_emojis, emoji_count_p, emojis_all_count = fb.top_emojis(nbr_of_top_emojis)
         x = np.arange(len(top_emojis))
         bar_width = 0.8 / len(participants)  # Calculate the width of each bar
 
@@ -150,12 +189,12 @@ def main():
         plt.tight_layout()
         pdf.savefig()
         plt.close()
+        pb.printProgressBar()
 
         # Plot top reactions emojis
         plt.rcParams['font.family'] = 'Segoe UI Emoji'
         plt.gca().set_prop_cycle('color', colors)
 
-        top_reactions_emojis, emoji_reactions_count_p, emojis_reactions_all_count = fb.top_reactions_emojis(nbr_of_top_emojis)
         x = np.arange(len(top_reactions_emojis))
         bar_width = 0.8 / len(participants)  # Calculate the width of each bar
 
@@ -177,6 +216,7 @@ def main():
         plt.tight_layout()
         pdf.savefig()
         plt.close()
+        pb.printProgressBar()
 
         # PDF info
         d = pdf.infodict()
@@ -187,22 +227,7 @@ def main():
         d['CreationDate'] = datetime.today()
         d['ModDate'] = datetime.today()
 
-    print('Most messages in one day: {}'.format(max(nbr_times_day)))
-
-    # Emojis
-    print(banner('Emojis'))
-    for i, p in enumerate(participants, 1):
-        print('{}. {}:\t{}'.format(i, p, emojis_all_count[p]))
-
-    print('Top {} emojis: {}'.format(nbr_of_top_emojis, top_emojis))
-
-    # Reactions emojis
-    print(banner('Reactions emojis'))
-    for i, p in enumerate(participants, 1):
-        print('{}. {}:\t{}'.format(i, p, emojis_reactions_all_count[p]))
-
-    print('Top {} reactions emojis: {}'.format(nbr_of_top_emojis, top_reactions_emojis))
-
+    pb.printProgressBar()
     print('\nPDF generated successfully!')
 
 
@@ -221,7 +246,6 @@ def banner(msg, ch='=', length=80):
     spaced_text = ' {} '.format(msg)
     banner = spaced_text.center(length, ch)
     return banner
-
 
 if __name__ == '__main__':
     main()
