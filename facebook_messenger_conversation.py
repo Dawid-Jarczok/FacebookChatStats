@@ -153,6 +153,7 @@ class FacebookMessengerConversation():
                     nbr_words_p[sender] += len(message['content'].split())
                 except KeyError:
                     pass
+        nbr_words_p = {p: nbr_words_p[p] if nbr_words_p[p] > 0 else 1 for p in nbr_words_p}
         nbr_words_p_sorted = dict(sorted(nbr_words_p.items(), key=lambda item: item[1], reverse=True))
         return nbr_words_p_sorted
 
