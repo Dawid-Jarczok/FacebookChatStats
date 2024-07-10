@@ -42,10 +42,19 @@ class FacebookMessengerConversation():
                     'raw_unicode_escape').decode('utf-8')
 
         # Set names of conversation participants
-        nbr_participants = len(self.data['participants'])
-        self.p = nbr_participants * [None]
-        for i in range(nbr_participants):
-            self.p[i] = self.data['participants'][i]['name']
+        #nbr_participants = len(self.data['participants'])
+        #self.p = nbr_participants * [None]
+        #for i in range(nbr_participants):
+        #    self.p[i] = self.data['participants'][i]['name']
+
+        # For group chats where the participants left the chat
+        nbr_participants = 0
+        self.p = []
+        for message in self.data['messages']:
+            if 'sender_name' in message:
+                if message['sender_name'] not in self.p:
+                    self.p.append(message['sender_name'])
+                    nbr_participants += 1
 
     def get_participants(self):
         """Returns the names of the conversation participants.
