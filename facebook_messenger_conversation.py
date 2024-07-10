@@ -144,7 +144,6 @@ class FacebookMessengerConversation():
                 nbr_characters_p[sender] += len(message['content'])
         nbr_characters_p_sorted = dict(sorted(nbr_characters_p.items(), key=lambda item: item[1], reverse=True))
         return nbr_characters_p_sorted
-        
 
     def get_avg_len_msg(self):
         """Returns the average length of a message in words.
@@ -311,3 +310,25 @@ class FacebookMessengerConversation():
         all_emojis_count_sorted = dict(sorted(all_emojis_count.items(), key=lambda item: item[1], reverse=True))
 
         return top_emojis, emojis_count_p, all_emojis_count_sorted
+    
+    def top_characters(self, nbr):
+        """Returns the top `nbr` characters used without spaces
+
+        Args:
+            nbr (int): The number of characters to include in top list.
+
+        Returns:
+            Dict showing the top characters used with their counts
+
+        """
+        characters = {c: 0 for c in set(''.join([message['content'] for message in self.data['messages'] if 'content' in message]))}
+        for message in self.data['messages']:
+            if 'content' in message:
+                msg = message['content']
+                for c in msg:
+                    if c != ' ':
+                        characters[c] += 1
+        top_characters = {character_key: count for character_key, count in sorted(characters.items(),
+                           key=lambda kv: (-kv[1], kv[0]))[:nbr]}
+        return top_characters
+    

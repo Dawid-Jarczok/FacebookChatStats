@@ -27,6 +27,7 @@ def main():
 
     fb = FacebookMessengerConversation(path_to_conversation)
     nbr_of_top_emojis = 10
+    nbr_of_top_characters = 10
 
     participants = fb.get_participants()
 
@@ -58,6 +59,8 @@ def main():
     print('Number of characters: {}'.format(nbr_characters))
     for i, p in enumerate(participants, 1):
         print('{}. {}: {} ({:.3} %)'.format(i, p, nbr_characters_p[p], 100*nbr_characters_p[p]/nbr_characters))
+    top_characters = fb.top_characters(nbr_of_top_characters)
+    print('Top {} characters: {}'.format(nbr_of_top_characters, list(top_characters.keys())))
 
     print(banner('Averages'))
     print('Average length of messages: {} words'.format(fb.get_avg_len_msg()))
@@ -95,7 +98,7 @@ def main():
     filename = os.path.splitext(os.path.basename(sys.argv[1]))[0] + '.pdf'
 
     with PdfPages(os.path.join('results', filename)) as pdf:
-        # Plot messages percentage
+        # Plot participants messages percentage
         # Set a wider range of colors for the color cycle
         colors = plt.cm.tab20(np.linspace(0, 1, 20))
         plt.gca().set_prop_cycle('color', colors)
@@ -110,7 +113,7 @@ def main():
         plt.close()
         pb.printProgressBar()
 
-        # Plot words percentage
+        # Plot participants words percentage
         # Set a wider range of colors for the color cycle
         colors = plt.cm.tab20(np.linspace(0, 1, 20))
         plt.gca().set_prop_cycle('color', colors)
@@ -125,7 +128,7 @@ def main():
         plt.close()
         pb.printProgressBar()
 
-        # Plot characters percentage
+        # Plot participants characters percentage
         # Set a wider range of colors for the color cycle
         colors = plt.cm.tab20(np.linspace(0, 1, 20))
         plt.gca().set_prop_cycle('color', colors)
@@ -238,6 +241,23 @@ def main():
         ax.spines['bottom'].set_linewidth(0.5)
         ax.spines['left'].set_linewidth(0.5)
         plt.tight_layout()
+        pdf.savefig()
+        plt.close()
+        pb.printProgressBar()
+
+        # Plot top characters percentage
+        # Set a wider range of colors for the color cycle
+        colors = plt.cm.tab20(np.linspace(0, 1, 20))
+        plt.gca().set_prop_cycle('color', colors)
+        fracs = [100*top_characters[c]/nbr_characters for c in top_characters]
+        # Add the percentage of the rest of the characters
+        fracs.append(100 - sum(fracs))
+        plt.pie(fracs, startangle=90, autopct='%1.1f%%')
+        plt.legend(list(top_characters.keys()) + ['Rest'],
+                   loc='upper left',
+                   bbox_to_anchor=(-0.15, 1.15))
+        plt.axis('equal')
+        plt.title('Top {} characters'.format(nbr_of_top_characters))
         pdf.savefig()
         plt.close()
         pb.printProgressBar()
