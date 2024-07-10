@@ -354,3 +354,29 @@ class FacebookMessengerConversation():
         top_words = {word_key: count for word_key, count in sorted(words.items(),
                            key=lambda kv: (-kv[1], kv[0]))[:nbr]}
         return top_words
+    
+    def top_words_p(self, nbr):
+        """Returns the top `nbr` words used per participant
+
+        Args:
+            nbr (int): The number of words to include in top list.
+
+        Returns:
+            Dict showing the top words used with their counts per participant
+
+        """
+        words_p = {p: {} for p in self.p}
+        for p in self.p:
+            words_p[p] = {}
+        for message in self.data['messages']:
+            if 'content' in message:
+                msg = message['content']
+                sender = message['sender_name']
+                for word in msg.split():
+                    if word in words_p[sender]:
+                        words_p[sender][word] += 1
+                    else:
+                        words_p[sender][word] = 1
+        top_words_p = {p: {word_key: count for word_key, count in sorted(words_p[p].items(),
+                           key=lambda kv: (-kv[1], kv[0]))[:nbr]} for p in self.p}
+        return top_words_p

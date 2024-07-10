@@ -55,6 +55,9 @@ def main():
         print('{}. {}: {} ({:.3} %)'.format(i, p, nbr_words_p[p], 100*nbr_words_p[p]/nbr_words))
     top_words = fb.top_words(nbr_of_top_words)
     print('Top {} words: {}'.format(nbr_of_top_words, list(top_words.keys())))
+    top_words_p = fb.top_words_p(nbr_of_top_words)
+    for i, p in enumerate(participants, 1):
+        print('{}. {}: {}'.format(i, p, list(top_words_p[p].keys())))
     
     print(banner('Characters'))
     nbr_characters_p = fb.get_nbr_characters_p()
@@ -90,7 +93,7 @@ def main():
     # Generate PDF
     print(banner('Plots'))
     print('Generating PDF')
-    pb = ProgressBar(10, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    pb = ProgressBar(11, prefix = 'Progress:', suffix = 'Complete', length = 50)
 
     # Set appropriate filename
     names = ''
@@ -261,6 +264,17 @@ def main():
                    bbox_to_anchor=(-0.15, 1.15))
         plt.axis('equal')
         plt.title('Top {} characters'.format(nbr_of_top_characters))
+        pdf.savefig()
+        plt.close()
+        pb.printProgressBar()
+
+        # Plot top words
+        plt.rcParams['font.family'] = 'Arial'
+        plt.barh(list(top_words.keys()), list(top_words.values()))
+        plt.title('Top {} Words'.format(nbr_of_top_words))
+        plt.xlabel('Frequency')
+        plt.ylabel('Words')
+        plt.tight_layout()
         pdf.savefig()
         plt.close()
         pb.printProgressBar()
