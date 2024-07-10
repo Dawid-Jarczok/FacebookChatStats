@@ -42,10 +42,19 @@ class FacebookMessengerConversation():
                     'raw_unicode_escape').decode('utf-8')
 
         # Set names of conversation participants
-        nbr_participants = len(self.data['participants'])
-        self.p = nbr_participants * [None]
-        for i in range(nbr_participants):
-            self.p[i] = self.data['participants'][i]['name']
+        #nbr_participants = len(self.data['participants'])
+        #self.p = nbr_participants * [None]
+        #for i in range(nbr_participants):
+        #    self.p[i] = self.data['participants'][i]['name']
+
+        # For group chats where the participants left the chat
+        nbr_participants = 0
+        self.p = []
+        for message in self.data['messages']:
+            if 'sender_name' in message:
+                if message['sender_name'] not in self.p and len(message['sender_name']) > 0:
+                    self.p.append(message['sender_name'])
+                    nbr_participants += 1
 
     def get_participants(self):
         """Returns the names of the conversation participants.
@@ -93,6 +102,20 @@ class FacebookMessengerConversation():
         start, end = self.get_time_interval('datetime')
         return (end - start).days + 1
 
+    def get_nbr_days_active(self):
+        """Returns the number of days messages were sent.
+
+        Returns:
+            int: Number of days messages were sent.
+
+        """
+        days = set()
+        for message in self.data['messages']:
+            current = datetime.fromtimestamp(
+                message['timestamp_ms']/1000).date()
+            days.add(current)
+        return len(days)
+
     def get_nbr_msg(self):
         """Returns the total number of messages.
 
@@ -114,12 +137,49 @@ class FacebookMessengerConversation():
             if 'content' in message:
                 nbr_words += len(message['content'].split())
         return nbr_words
-
-    def get_avg_len_msg(self):
-        """Returns the average length of a message.
+    
+    def get_nbr_words_p(self):
+        """Returns the total number of words per participant.
 
         Returns:
-            float: Average length of message.
+            dict: Contains the number of words per participant.
+
+        """
+        nbr_words_p = {p: 0 for p in self.p}
+        for message in self.data['messages']:
+            if 'content' in message:
+                try:
+                    sender = message['sender_name']
+                    nbr_words_p[sender] += len(message['content'].split())
+                except KeyError:
+                    pass
+        nbr_words_p = {p: nbr_words_p[p] if nbr_words_p[p] > 0 else 1 for p in nbr_words_p}
+        nbr_words_p_sorted = dict(sorted(nbr_words_p.items(), key=lambda item: item[1], reverse=True))
+        return nbr_words_p_sorted
+
+    def get_nbr_characters_p(self):
+        """Returns the total number of characters per participant.
+
+        Returns:
+            dict: Contains the number of characters per participant.
+
+        """
+        nbr_characters_p = {p: 0 for p in self.p}
+        for message in self.data['messages']:
+            if 'content' in message:
+                try:
+                    sender = message['sender_name']
+                    nbr_characters_p[sender] += len(message['content'])
+                except KeyError:
+                    pass
+        nbr_characters_p_sorted = dict(sorted(nbr_characters_p.items(), key=lambda item: item[1], reverse=True))
+        return nbr_characters_p_sorted
+
+    def get_avg_len_msg(self):
+        """Returns the average length of a message in words.
+
+        Returns:
+            float: Average length of message in words.
 
         """
         return round(self.get_nbr_words()/self.get_nbr_msg(), 1)
@@ -155,7 +215,7 @@ class FacebookMessengerConversation():
 
         for key in act_sorted:
             nbr_msg_p = act_sorted[key]
-            act_sorted[key] = [nbr_msg_p, 100*round(nbr_msg_p/nbr_msg, 2)]
+            act_sorted[key] = [nbr_msg_p, 100*nbr_msg_p/nbr_msg]
         return act_sorted
 
     def timeline(self):
@@ -211,27 +271,154 @@ class FacebookMessengerConversation():
             nbr (int): The number of emojis to include in top list.
 
         Returns:
-            tuple: List of top emojis and dict showing how many of
-                these were sent by each participant.
+            tuple:  List of top emojis
+                    Dict showing how many of these were sent by each participant
+                    Dict showing number of all emojis sent by each participant
 
         """
+        all_emojis_count = {p: 0 for p in self.p}
         emojis = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
         emojis_p = {p: 0 for p in self.p}
         for p in emojis_p:
             emojis_p[p] = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
         for message in self.data['messages']:
             if 'content' in message:
-                msg = message['content']
-                sender = message['sender_name']
-                for c in msg:
-                    emoji_str = emoji.demojize(c)
-                    if emoji_str in emojis and sender in emojis_p:
-                        emojis_p[sender][emoji_str] += 1
-                        emojis[emoji_str] += 1
+                try:
+                    msg = message['content']
+                    sender = message['sender_name']
+                    for c in msg:
+                        emoji_str = emoji.demojize(c)
+                        if emoji_str in emojis and sender in emojis_p:
+                            emojis_p[sender][emoji_str] += 1
+                            emojis[emoji_str] += 1
+                            all_emojis_count[sender] += 1
+                except KeyError:
+                    pass
+                
         top_emojis = [emoji_key for emoji_key, count in sorted(emojis.items(),
                                        key=lambda kv: (-kv[1], kv[0]))[:nbr]]
         emojis_count_p = {p: {} for p in self.p}
         for p in self.p:
                 emojis_count_p[p] = [emojis_p[p][e] for e in top_emojis]
         top_emojis = [emoji.emojize(top_emoji) for top_emoji in top_emojis]
-        return top_emojis, emojis_count_p
+
+        all_emojis_count_sorted = dict(sorted(all_emojis_count.items(), key=lambda item: item[1], reverse=True))
+
+        return top_emojis, emojis_count_p, all_emojis_count_sorted
+
+    def top_reactions_emojis(self, nbr):
+        """Returns the top `nbr` emojis used in reactions and who sent them.
+
+        Args:
+            nbr (int): The number of emojis to include in top list.
+
+        Returns:
+            tuple:  List of top reactions emojis
+                    Dict showing how many of these were sent by each participant
+                    Dict showing number of all emojis sent by each participant
+
+
+        """
+        all_emojis_count = {p: 0 for p in self.p}
+        emojis = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
+        emojis_p = {p: 0 for p in self.p}
+        for p in emojis_p:
+            emojis_p[p] = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
+        for message in self.data['messages']:
+            if 'reactions' in message:
+                for reaction in message['reactions']:
+                    try:
+                        actor = reaction['actor']
+                        emoji_str = emoji.demojize(reaction['reaction'].encode("raw_unicode_escape").decode("utf-8"))
+                        if emoji_str in emojis and actor in emojis_p:
+                            emojis_p[actor][emoji_str] += 1
+                            emojis[emoji_str] += 1
+                            all_emojis_count[actor] += 1
+                    except KeyError:
+                        pass
+                    
+
+        top_emojis = [emoji_key for emoji_key, count in sorted(emojis.items(),
+                                       key=lambda kv: (-kv[1], kv[0]))[:nbr]]
+        emojis_count_p = {p: {} for p in self.p}
+        for p in self.p:
+                emojis_count_p[p] = [emojis_p[p][e] for e in top_emojis]
+        top_emojis = [emoji.emojize(top_emoji) for top_emoji in top_emojis]
+
+        all_emojis_count_sorted = dict(sorted(all_emojis_count.items(), key=lambda item: item[1], reverse=True))
+
+        return top_emojis, emojis_count_p, all_emojis_count_sorted
+    
+    def top_characters(self, nbr):
+        """Returns the top `nbr` characters used without spaces
+
+        Args:
+            nbr (int): The number of characters to include in top list.
+
+        Returns:
+            Dict showing the top characters used with their counts
+
+        """
+        characters = {c: 0 for c in set(''.join([message['content'].lower() for message in self.data['messages'] if 'content' in message]))}
+        for message in self.data['messages']:
+            if 'content' in message:
+                msg = message['content'].lower()
+                for c in msg:
+                    if c != ' ':
+                        characters[c] += 1
+        top_characters = {character_key: count for character_key, count in sorted(characters.items(),
+                           key=lambda kv: (-kv[1], kv[0]))[:nbr]}
+        return top_characters
+    
+    def top_words(self, nbr):
+        """Returns the top `nbr` words used
+
+        Args:
+            nbr (int): The number of words to include in top list.
+
+        Returns:
+            Dict showing the top words used with their counts
+
+        """
+        words = {}
+        for message in self.data['messages']:
+            if 'content' in message:
+                msg = message['content']
+                for word in msg.split():
+                    if word in words:
+                        words[word] += 1
+                    else:
+                        words[word] = 1
+        top_words = {word_key: count for word_key, count in sorted(words.items(),
+                           key=lambda kv: (-kv[1], kv[0]))[:nbr]}
+        return top_words
+    
+    def top_words_p(self, nbr):
+        """Returns the top `nbr` words used per participant
+
+        Args:
+            nbr (int): The number of words to include in top list.
+
+        Returns:
+            Dict showing the top words used with their counts per participant
+
+        """
+        words_p = {p: {} for p in self.p}
+        for p in self.p:
+            words_p[p] = {}
+        for message in self.data['messages']:
+            if 'content' in message:
+                try:
+                    msg = message['content']
+                    sender = message['sender_name']
+                    for word in msg.split():
+                        if word in words_p[sender]:
+                            words_p[sender][word] += 1
+                        else:
+                            words_p[sender][word] = 1
+                except KeyError:
+                    pass
+                
+        top_words_p = {p: {word_key: count for word_key, count in sorted(words_p[p].items(),
+                           key=lambda kv: (-kv[1], kv[0]))[:nbr]} for p in self.p}
+        return top_words_p
