@@ -293,7 +293,7 @@ class FacebookMessengerConversation():
 
         all_emojis_count_sorted = dict(sorted(all_emojis_count.items(), key=lambda item: item[1], reverse=True))
 
-        return top_emojis, emojis_count_p, all_emojis_count
+        return top_emojis, emojis_count_p, all_emojis_count_sorted
 
     def top_reactions_emojis(self, nbr):
         """Returns the top `nbr` emojis used in reactions and who sent them.

@@ -79,7 +79,7 @@ def main():
     # Emojis
     print(banner('Emojis'))
     top_emojis, emoji_count_p, emojis_all_count = fb.top_emojis(nbr_of_top_emojis)
-    for i, p in enumerate(participants, 1):
+    for i, p in enumerate(emojis_all_count, 1):
         print('{}. {}:\t{}'.format(i, p, emojis_all_count[p]))
 
     print('Top {} emojis: {}'.format(nbr_of_top_emojis, top_emojis))
@@ -87,7 +87,7 @@ def main():
     # Reactions emojis
     print(banner('Reactions emojis'))
     top_reactions_emojis, emoji_reactions_count_p, emojis_reactions_all_count = fb.top_reactions_emojis(nbr_of_top_emojis)
-    for i, p in enumerate(participants, 1):
+    for i, p in enumerate(emojis_reactions_all_count, 1):
         print('{}. {}:\t{}'.format(i, p, emojis_reactions_all_count[p]))
 
     print('Top {} reactions emojis: {}'.format(nbr_of_top_emojis, top_reactions_emojis))
@@ -300,11 +300,11 @@ def main():
 
         # Emojis
         s = f'Top {nbr_of_top_emojis} emojis: {top_emojis}\n'
-        for i, p in enumerate(participants, 1):
+        for i, p in enumerate(emojis_all_count, 1):
             s += f'{i}. {p}: {emojis_all_count[p]}' + '\n'
         # Reactions emojis
         s += f'Top {nbr_of_top_emojis} reactions emojis: {top_reactions_emojis}\n'
-        for i, p in enumerate(participants, 1):
+        for i, p in enumerate(emojis_reactions_all_count, 1):
             s += f'{i}. {p}: {emojis_reactions_all_count[p]}' + '\n'
         plt.text(0.0, 0.0, s, fontsize=12, verticalalignment='center')
 
