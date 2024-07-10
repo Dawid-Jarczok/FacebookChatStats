@@ -52,7 +52,7 @@ class FacebookMessengerConversation():
         self.p = []
         for message in self.data['messages']:
             if 'sender_name' in message:
-                if message['sender_name'] not in self.p:
+                if message['sender_name'] not in self.p and len(message['sender_name']) > 0:
                     self.p.append(message['sender_name'])
                     nbr_participants += 1
 
@@ -148,8 +148,11 @@ class FacebookMessengerConversation():
         nbr_words_p = {p: 0 for p in self.p}
         for message in self.data['messages']:
             if 'content' in message:
-                sender = message['sender_name']
-                nbr_words_p[sender] += len(message['content'].split())
+                try:
+                    sender = message['sender_name']
+                    nbr_words_p[sender] += len(message['content'].split())
+                except KeyError:
+                    pass
         nbr_words_p_sorted = dict(sorted(nbr_words_p.items(), key=lambda item: item[1], reverse=True))
         return nbr_words_p_sorted
 
@@ -163,8 +166,11 @@ class FacebookMessengerConversation():
         nbr_characters_p = {p: 0 for p in self.p}
         for message in self.data['messages']:
             if 'content' in message:
-                sender = message['sender_name']
-                nbr_characters_p[sender] += len(message['content'])
+                try:
+                    sender = message['sender_name']
+                    nbr_characters_p[sender] += len(message['content'])
+                except KeyError:
+                    pass
         nbr_characters_p_sorted = dict(sorted(nbr_characters_p.items(), key=lambda item: item[1], reverse=True))
         return nbr_characters_p_sorted
 
@@ -276,14 +282,18 @@ class FacebookMessengerConversation():
             emojis_p[p] = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
         for message in self.data['messages']:
             if 'content' in message:
-                msg = message['content']
-                sender = message['sender_name']
-                for c in msg:
-                    emoji_str = emoji.demojize(c)
-                    if emoji_str in emojis and sender in emojis_p:
-                        emojis_p[sender][emoji_str] += 1
-                        emojis[emoji_str] += 1
-                        all_emojis_count[sender] += 1
+                try:
+                    msg = message['content']
+                    sender = message['sender_name']
+                    for c in msg:
+                        emoji_str = emoji.demojize(c)
+                        if emoji_str in emojis and sender in emojis_p:
+                            emojis_p[sender][emoji_str] += 1
+                            emojis[emoji_str] += 1
+                            all_emojis_count[sender] += 1
+                except KeyError:
+                    pass
+                
         top_emojis = [emoji_key for emoji_key, count in sorted(emojis.items(),
                                        key=lambda kv: (-kv[1], kv[0]))[:nbr]]
         emojis_count_p = {p: {} for p in self.p}
@@ -316,12 +326,16 @@ class FacebookMessengerConversation():
         for message in self.data['messages']:
             if 'reactions' in message:
                 for reaction in message['reactions']:
-                    actor = reaction['actor']
-                    emoji_str = emoji.demojize(reaction['reaction'].encode("raw_unicode_escape").decode("utf-8"))
-                    if emoji_str in emojis and actor in emojis_p:
-                        emojis_p[actor][emoji_str] += 1
-                        emojis[emoji_str] += 1
-                        all_emojis_count[actor] += 1
+                    try:
+                        actor = reaction['actor']
+                        emoji_str = emoji.demojize(reaction['reaction'].encode("raw_unicode_escape").decode("utf-8"))
+                        if emoji_str in emojis and actor in emojis_p:
+                            emojis_p[actor][emoji_str] += 1
+                            emojis[emoji_str] += 1
+                            all_emojis_count[actor] += 1
+                    except KeyError:
+                        pass
+                    
 
         top_emojis = [emoji_key for emoji_key, count in sorted(emojis.items(),
                                        key=lambda kv: (-kv[1], kv[0]))[:nbr]]
@@ -393,13 +407,17 @@ class FacebookMessengerConversation():
             words_p[p] = {}
         for message in self.data['messages']:
             if 'content' in message:
-                msg = message['content']
-                sender = message['sender_name']
-                for word in msg.split():
-                    if word in words_p[sender]:
-                        words_p[sender][word] += 1
-                    else:
-                        words_p[sender][word] = 1
+                try:
+                    msg = message['content']
+                    sender = message['sender_name']
+                    for word in msg.split():
+                        if word in words_p[sender]:
+                            words_p[sender][word] += 1
+                        else:
+                            words_p[sender][word] = 1
+                except KeyError:
+                    pass
+                
         top_words_p = {p: {word_key: count for word_key, count in sorted(words_p[p].items(),
                            key=lambda kv: (-kv[1], kv[0]))[:nbr]} for p in self.p}
         return top_words_p

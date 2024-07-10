@@ -46,27 +46,28 @@ def main():
     nbr_messages = fb.get_nbr_msg()
     print('Number of messages: {}'.format(nbr_messages))
     activity = fb.activity()
+    nbr_messages_p = {p: activity[p][0] for p in participants}
     for i, (act_p, data) in enumerate(activity.items(), 1):
-        print('{}. {}: {} ({:.3} %)'.format(i, act_p, data[0], data[1]))
+        print('{}. {: <20}: {} ({:.3} %)'.format(i, act_p, data[0], data[1]))
 
     print(banner('Words'))
     nbr_words = fb.get_nbr_words()
     print('Number of words: {}'.format(nbr_words))
     nbr_words_p = fb.get_nbr_words_p()
     for i, p in enumerate(participants, 1):
-        print('{}. {}: {} ({:.3} %)'.format(i, p, nbr_words_p[p], 100*nbr_words_p[p]/nbr_words))
+        print('{}. {: <20}: {} ({:.3} %)'.format(i, p, nbr_words_p[p], 100*nbr_words_p[p]/nbr_words))
     top_words = fb.top_words(nbr_of_top_words)
     print('Top {} words: {}'.format(nbr_of_top_words, list(top_words.keys())))
     top_words_p = fb.top_words_p(nbr_of_top_words)
     for i, p in enumerate(participants, 1):
-        print('{}. {}: {}'.format(i, p, list(top_words_p[p].keys())))
+        print('{}. {: <20}: {}'.format(i, p, list(top_words_p[p].keys())))
     
     print(banner('Characters'))
     nbr_characters_p = fb.get_nbr_characters_p()
     nbr_characters = sum(nbr_characters_p.values())
     print('Number of characters: {}'.format(nbr_characters))
     for i, p in enumerate(participants, 1):
-        print('{}. {}: {} ({:.3} %)'.format(i, p, nbr_characters_p[p], 100*nbr_characters_p[p]/nbr_characters))
+        print('{}. {: <20}: {} ({:.3} %)'.format(i, p, nbr_characters_p[p], 100*nbr_characters_p[p]/nbr_characters))
     top_characters = fb.top_characters(nbr_of_top_characters)
     print('Top {} characters: {}'.format(nbr_of_top_characters, list(top_characters.keys())))
 
@@ -74,13 +75,15 @@ def main():
     print('Average length of messages: {} words'.format(fb.get_avg_len_msg()))
     print('Average length of messages: {:.1f} characters'.format(nbr_characters/nbr_messages))
     print('Average length of word: {:.1f} characters'.format(nbr_characters/nbr_words))
+    for i, p in enumerate(participants, 1):
+        print('{}. {: <20}: {:.1f} w/msg\t{:.1f} ch/msg\t{:.1f} ch/w'.format(i, p, nbr_words_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_words_p[p]))
     print('Average messages per day: {}'.format(fb.get_avg_msg_day()))
 
     # Emojis
     print(banner('Emojis'))
     top_emojis, emoji_count_p, emojis_all_count = fb.top_emojis(nbr_of_top_emojis)
     for i, p in enumerate(emojis_all_count, 1):
-        print('{}. {}:\t{}'.format(i, p, emojis_all_count[p]))
+        print('{}. {: <20}: {}'.format(i, p, emojis_all_count[p]))
 
     print('Top {} emojis: {}'.format(nbr_of_top_emojis, top_emojis))
 
@@ -88,7 +91,7 @@ def main():
     print(banner('Reactions emojis'))
     top_reactions_emojis, emoji_reactions_count_p, emojis_reactions_all_count = fb.top_reactions_emojis(nbr_of_top_emojis)
     for i, p in enumerate(emojis_reactions_all_count, 1):
-        print('{}. {}:\t{}'.format(i, p, emojis_reactions_all_count[p]))
+        print('{}. {: <20}: {}'.format(i, p, emojis_reactions_all_count[p]))
 
     print('Top {} reactions emojis: {}'.format(nbr_of_top_emojis, top_reactions_emojis))
 
@@ -99,10 +102,13 @@ def main():
 
     # Set appropriate filename
     names = ''
-    for p in participants:
-        name = p.split(' ')
-        names += '{}_{}_'.format(name[0], name[1])
-    names = names[:-1]
+    if len(participants) > 2:
+        names = 'Group_chat'
+    else:
+        for p in participants:
+            name = p.split(' ')
+            names += '{}_{}_'.format(name[0], name[1])
+        names = names[:-1]
     filename = os.path.splitext(os.path.basename(sys.argv[1]))[0] + '.pdf'
 
     with PdfPages(os.path.join('results', filename)) as pdf:
@@ -297,6 +303,12 @@ def main():
         for elem in text_stats:
             plt.text(0.0, y, elem, fontsize=12, verticalalignment='center')
             y -= 0.025
+
+        s = ""
+        for i, p in enumerate(participants, 1):
+            s += '{}. {: <20}: {:2.1f} w/msg   {:2.1f} ch/msg   {:2.1f} ch/w'.format(i, p, nbr_words_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_words_p[p]) + '\n'
+            y -= 0.025
+        plt.text(0.0, y, s, fontsize=12, verticalalignment='center')
 
         # Emojis
         s = f'Top {nbr_of_top_emojis} emojis: {top_emojis}\n'
