@@ -28,6 +28,7 @@ def main():
     fb = FacebookMessengerConversation(path_to_conversation)
     nbr_of_top_emojis = 10
     nbr_of_top_characters = 10
+    nbr_of_top_words = 10
 
     participants = fb.get_participants()
 
@@ -52,6 +53,8 @@ def main():
     nbr_words_p = fb.get_nbr_words_p()
     for i, p in enumerate(participants, 1):
         print('{}. {}: {} ({:.3} %)'.format(i, p, nbr_words_p[p], 100*nbr_words_p[p]/nbr_words))
+    top_words = fb.top_words(nbr_of_top_words)
+    print('Top {} words: {}'.format(nbr_of_top_words, list(top_words.keys())))
     
     print(banner('Characters'))
     nbr_characters_p = fb.get_nbr_characters_p()
