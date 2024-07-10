@@ -156,7 +156,7 @@ def main():
         d['ModDate'] = datetime.today()
 
     print('Most messages in one day: {}'.format(max(nbr_times_day)))
-    print('Top 10 emojis: {}'.format(top_emojis))
+    print('Top 10 emojis: {}'.format(top_emojis).encode("unicode_escape"))
     print('PDF generated successfully!')
 
 
