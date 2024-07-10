@@ -37,6 +37,8 @@ def main():
     print('Start: {}\nEnd: {}'.format(start, end))
     nbr_days = fb.get_nbr_days()
     print('Number of days: {}'.format(nbr_days))
+    nbr_days_active = fb.get_nbr_days_active()
+    print('Number of days active: {} ({:.3} %)'.format(nbr_days_active, 100*nbr_days_active/nbr_days))
     timeline, nbr_times_day, nbr_times_weekday, nbr_times_hour = fb.timeline()
     print('Most messages in one day: {}'.format(max(nbr_times_day)))
 
@@ -279,6 +281,7 @@ def main():
             'Start: {}'.format(start),
             'End: {}'.format(end),
             'Number of days: {}'.format(nbr_days),
+            'Number of days active: {} ({:.3} %)'.format(nbr_days_active, 100*nbr_days_active/nbr_days),
             'Most messages in one day: {}'.format(max(nbr_times_day)),
             'Number of messages: {}'.format(nbr_messages),
             'Number of words: {}'.format(nbr_words),

@@ -93,6 +93,20 @@ class FacebookMessengerConversation():
         start, end = self.get_time_interval('datetime')
         return (end - start).days + 1
 
+    def get_nbr_days_active(self):
+        """Returns the number of days messages were sent.
+
+        Returns:
+            int: Number of days messages were sent.
+
+        """
+        days = set()
+        for message in self.data['messages']:
+            current = datetime.fromtimestamp(
+                message['timestamp_ms']/1000).date()
+            days.add(current)
+        return len(days)
+
     def get_nbr_msg(self):
         """Returns the total number of messages.
 
@@ -321,10 +335,10 @@ class FacebookMessengerConversation():
             Dict showing the top characters used with their counts
 
         """
-        characters = {c: 0 for c in set(''.join([message['content'] for message in self.data['messages'] if 'content' in message]))}
+        characters = {c: 0 for c in set(''.join([message['content'].lower() for message in self.data['messages'] if 'content' in message]))}
         for message in self.data['messages']:
             if 'content' in message:
-                msg = message['content']
+                msg = message['content'].lower()
                 for c in msg:
                     if c != ' ':
                         characters[c] += 1
