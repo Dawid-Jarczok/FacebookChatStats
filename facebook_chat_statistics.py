@@ -28,7 +28,7 @@ def main():
     fb = FacebookMessengerConversation(path_to_conversation)
     nbr_of_top_emojis = 10
     nbr_of_top_characters = 10
-    nbr_of_top_words = 20
+    nbr_of_top_words = 40
 
     participants = fb.get_participants()
 
@@ -290,19 +290,20 @@ def main():
             'Average messages per day: {}'.format(fb.get_avg_msg_day()),
         ]
 
-        emoji_stats = [
-            'Top {} emojis: {}'.format(nbr_of_top_emojis, top_emojis),
-            'Top {} reactions emojis: {}'.format(nbr_of_top_emojis, top_reactions_emojis)
-        ]
-
         y = 0.95
         for elem in text_stats:
             plt.text(0.0, y, elem, fontsize=12, verticalalignment='center')
             y -= 0.025
-        
-        for elem in emoji_stats:
-            plt.text(0.0, y, elem, fontsize=12, verticalalignment='center')
-            y -= 0.07
+
+        # Emojis
+        s = f'Top {nbr_of_top_emojis} emojis: {top_emojis}\n'
+        for i, p in enumerate(participants, 1):
+            s += f'{i}. {p}: {emojis_all_count[p]}' + '\n'
+        # Reactions emojis
+        s += f'Top {nbr_of_top_emojis} reactions emojis: {top_reactions_emojis}\n'
+        for i, p in enumerate(participants, 1):
+            s += f'{i}. {p}: {emojis_reactions_all_count[p]}' + '\n'
+        plt.text(0.0, 0.0, s, fontsize=12, verticalalignment='center')
 
         pdf.savefig()
         plt.close()
@@ -320,9 +321,9 @@ def main():
                 plt.text(x, y - 0.025*(j+1), '{}. {}: {}'.format(j+1, list(top_words.keys())[j], list(top_words.values())[j]), fontsize=12, verticalalignment='center')
         for i, p in enumerate(participants, 1):
             y = 0.95
-            plt.text(x + 0.2*i, y, p.split()[0], fontsize=12, verticalalignment='center')
+            plt.text(x + 0.22*i, y, p.split()[0], fontsize=12, verticalalignment='center')
             for j, word in enumerate(list(top_words_p[p].keys()), 1):
-                plt.text(x + 0.2*i, y - 0.025*j, '{}: {}'.format(word, top_words_p[p][word]), fontsize=12, verticalalignment='center')
+                plt.text(x + 0.22*i, y - 0.025*j, '{}: {}'.format(word, top_words_p[p][word]), fontsize=12, verticalalignment='center')
 
         pdf.savefig()
         plt.close()
