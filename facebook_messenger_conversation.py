@@ -130,11 +130,27 @@ class FacebookMessengerConversation():
         nbr_words_p_sorted = dict(sorted(nbr_words_p.items(), key=lambda item: item[1], reverse=True))
         return nbr_words_p_sorted
 
-    def get_avg_len_msg(self):
-        """Returns the average length of a message.
+    def get_nbr_characters_p(self):
+        """Returns the total number of characters per participant.
 
         Returns:
-            float: Average length of message.
+            dict: Contains the number of characters per participant.
+
+        """
+        nbr_characters_p = {p: 0 for p in self.p}
+        for message in self.data['messages']:
+            if 'content' in message:
+                sender = message['sender_name']
+                nbr_characters_p[sender] += len(message['content'])
+        nbr_characters_p_sorted = dict(sorted(nbr_characters_p.items(), key=lambda item: item[1], reverse=True))
+        return nbr_characters_p_sorted
+        
+
+    def get_avg_len_msg(self):
+        """Returns the average length of a message in words.
+
+        Returns:
+            float: Average length of message in words.
 
         """
         return round(self.get_nbr_words()/self.get_nbr_msg(), 1)

@@ -35,9 +35,12 @@ def main():
     print('Start: {}\nEnd: {}'.format(start, end))
     nbr_days = fb.get_nbr_days()
     print('Number of days: {}'.format(nbr_days))
+    timeline, nbr_times_day, nbr_times_weekday, nbr_times_hour = fb.timeline()
+    print('Most messages in one day: {}'.format(max(nbr_times_day)))
 
-    print(banner('Totals'))
-    print('Number of messages: {}'.format(fb.get_nbr_msg()))
+    print(banner('Messages'))
+    nbr_messages = fb.get_nbr_msg()
+    print('Number of messages: {}'.format(nbr_messages))
     activity = fb.activity()
     for i, (act_p, data) in enumerate(activity.items(), 1):
         print('{}. {}: {} ({:.3} %)'.format(i, act_p, data[0], data[1]))
@@ -48,13 +51,19 @@ def main():
     nbr_words_p = fb.get_nbr_words_p()
     for i, p in enumerate(participants, 1):
         print('{}. {}: {} ({:.3} %)'.format(i, p, nbr_words_p[p], 100*nbr_words_p[p]/nbr_words))
+    
+    print(banner('Characters'))
+    nbr_characters_p = fb.get_nbr_characters_p()
+    nbr_characters = sum(nbr_characters_p.values())
+    print('Number of characters: {}'.format(nbr_characters))
+    for i, p in enumerate(participants, 1):
+        print('{}. {}: {} ({:.3} %)'.format(i, p, nbr_characters_p[p], 100*nbr_characters_p[p]/nbr_characters))
 
     print(banner('Averages'))
     print('Average length of messages: {} words'.format(fb.get_avg_len_msg()))
+    print('Average length of messages: {:.1f} characters'.format(nbr_characters/nbr_messages))
+    print('Average length of word: {:.1f} characters'.format(nbr_characters/nbr_words))
     print('Average messages per day: {}'.format(fb.get_avg_msg_day()))
-
-    timeline, nbr_times_day, nbr_times_weekday, nbr_times_hour = fb.timeline()
-    print('Most messages in one day: {}'.format(max(nbr_times_day)))
 
     # Emojis
     print(banner('Emojis'))
@@ -112,6 +121,21 @@ def main():
                    bbox_to_anchor=(-0.15, 1.15))
         plt.axis('equal')
         plt.title('Words')
+        pdf.savefig()
+        plt.close()
+        pb.printProgressBar()
+
+        # Plot characters percentage
+        # Set a wider range of colors for the color cycle
+        colors = plt.cm.tab20(np.linspace(0, 1, 20))
+        plt.gca().set_prop_cycle('color', colors)
+        fracs = [100*nbr_characters_p[p]/nbr_characters for p in participants]
+        plt.pie(fracs, startangle=90, autopct='%1.1f%%')
+        plt.legend(participants,
+                   loc='upper left',
+                   bbox_to_anchor=(-0.15, 1.15))
+        plt.axis('equal')
+        plt.title('Characters')
         pdf.savefig()
         plt.close()
         pb.printProgressBar()
