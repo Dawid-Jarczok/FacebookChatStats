@@ -32,16 +32,21 @@ def main():
     print(banner('Times'))
     start, end = fb.get_time_interval('str')
     print('Start: {}\nEnd: {}'.format(start, end))
-
-    print(banner('Totals'))
-    activity = fb.activity()
-    for i, (act_p, data) in enumerate(activity.items(), 1):
-        print('{}. {}: {} ({:.1f} %)'.format(i, act_p, data[0], data[1]))
-
     nbr_days = fb.get_nbr_days()
     print('Number of days: {}'.format(nbr_days))
+
+    print(banner('Totals'))
     print('Number of messages: {}'.format(fb.get_nbr_msg()))
-    print('Number of words: {}'.format(fb.get_nbr_words()))
+    activity = fb.activity()
+    for i, (act_p, data) in enumerate(activity.items(), 1):
+        print('{}. {}: {} ({:.3} %)'.format(i, act_p, data[0], data[1]))
+
+    print(banner('Words'))
+    nbr_words = fb.get_nbr_words()
+    print('Number of words: {}'.format(nbr_words))
+    nbr_words_p = fb.get_nbr_words_p()
+    for i, p in enumerate(participants, 1):
+        print('{}. {}: {} ({:.3} %)'.format(i, p, nbr_words_p[p], 100*nbr_words_p[p]/nbr_words))
 
     print(banner('Averages'))
     print('Average length of messages: {} words'.format(fb.get_avg_len_msg()))
@@ -186,14 +191,14 @@ def main():
 
     # Emojis
     print(banner('Emojis'))
-    for i, p in enumerate(participants):
+    for i, p in enumerate(participants, 1):
         print('{}. {}:\t{}'.format(i, p, emojis_all_count[p]))
 
     print('Top {} emojis: {}'.format(nbr_of_top_emojis, top_emojis))
 
     # Reactions emojis
     print(banner('Reactions emojis'))
-    for i, p in enumerate(participants):
+    for i, p in enumerate(participants, 1):
         print('{}. {}:\t{}'.format(i, p, emojis_reactions_all_count[p]))
 
     print('Top {} reactions emojis: {}'.format(nbr_of_top_emojis, top_reactions_emojis))

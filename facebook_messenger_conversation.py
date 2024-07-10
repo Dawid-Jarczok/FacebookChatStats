@@ -114,6 +114,21 @@ class FacebookMessengerConversation():
             if 'content' in message:
                 nbr_words += len(message['content'].split())
         return nbr_words
+    
+    def get_nbr_words_p(self):
+        """Returns the total number of words per participant.
+
+        Returns:
+            dict: Contains the number of words per participant.
+
+        """
+        nbr_words_p = {p: 0 for p in self.p}
+        for message in self.data['messages']:
+            if 'content' in message:
+                sender = message['sender_name']
+                nbr_words_p[sender] += len(message['content'].split())
+        nbr_words_p_sorted = dict(sorted(nbr_words_p.items(), key=lambda item: item[1], reverse=True))
+        return nbr_words_p_sorted
 
     def get_avg_len_msg(self):
         """Returns the average length of a message.
@@ -155,7 +170,7 @@ class FacebookMessengerConversation():
 
         for key in act_sorted:
             nbr_msg_p = act_sorted[key]
-            act_sorted[key] = [nbr_msg_p, 100*round(nbr_msg_p/nbr_msg, 2)]
+            act_sorted[key] = [nbr_msg_p, 100*nbr_msg_p/nbr_msg]
         return act_sorted
 
     def timeline(self):
@@ -237,6 +252,9 @@ class FacebookMessengerConversation():
         for p in self.p:
                 emojis_count_p[p] = [emojis_p[p][e] for e in top_emojis]
         top_emojis = [emoji.emojize(top_emoji) for top_emoji in top_emojis]
+
+        all_emojis_count_sorted = dict(sorted(all_emojis_count.items(), key=lambda item: item[1], reverse=True))
+
         return top_emojis, emojis_count_p, all_emojis_count
 
     def top_reactions_emojis(self, nbr):
@@ -273,4 +291,7 @@ class FacebookMessengerConversation():
         for p in self.p:
                 emojis_count_p[p] = [emojis_p[p][e] for e in top_emojis]
         top_emojis = [emoji.emojize(top_emoji) for top_emoji in top_emojis]
-        return top_emojis, emojis_count_p, all_emojis_count
+
+        all_emojis_count_sorted = dict(sorted(all_emojis_count.items(), key=lambda item: item[1], reverse=True))
+
+        return top_emojis, emojis_count_p, all_emojis_count_sorted
