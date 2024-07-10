@@ -133,7 +133,34 @@ def main():
             plt.bar(x + x_offset, emoji_count_p[participant], align='center', width=bar_width, label=participant)
 
         plt.xticks(x, top_emojis)
-        plt.title('Top 10 emojis')
+        plt.title('Top {} emojis'.format(nbr_of_top_emojis))
+        plt.ylabel('Number of times used')
+        plt.legend()
+        ax = plt.gca()  # Get the current Axes instance
+        ax.yaxis.grid(linestyle='--')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['bottom'].set_linewidth(0.5)
+        ax.spines['left'].set_linewidth(0.5)
+        plt.tight_layout()
+        pdf.savefig()
+        plt.close()
+
+        # Plot top reactions emojis
+        plt.rcParams['font.family'] = 'Segoe UI Emoji'
+        plt.gca().set_prop_cycle('color', colors)
+
+        top_reactions_emojis, emoji_reactions_count_p = fb.top_reactions_emojis(nbr_of_top_emojis)
+        x = np.arange(len(top_reactions_emojis))
+        bar_width = 0.8 / len(participants)  # Calculate the width of each bar
+
+        for i, participant in enumerate(participants):
+            # Calculate the x values for the current participant
+            x_offset = i * bar_width - (0.4 - bar_width / 2)
+            plt.bar(x + x_offset, emoji_reactions_count_p[participant], align='center', width=bar_width, label=participant)
+
+        plt.xticks(x, top_reactions_emojis)
+        plt.title('Top {} reactions emojis'.format(nbr_of_top_emojis))
         plt.ylabel('Number of times used')
         plt.legend()
         ax = plt.gca()  # Get the current Axes instance
@@ -156,7 +183,8 @@ def main():
         d['ModDate'] = datetime.today()
 
     print('Most messages in one day: {}'.format(max(nbr_times_day)))
-    print('Top 10 emojis: {}'.format(top_emojis).encode("unicode_escape"))
+    print('Top {} emojis: {}'.format(nbr_of_top_emojis, top_emojis))
+    print('Top {} reactions emojis: {}'.format(nbr_of_top_emojis, top_reactions_emojis))
     print('PDF generated successfully!')
 
 
