@@ -28,7 +28,7 @@ def main():
     fb = FacebookMessengerConversation(path_to_conversation)
     nbr_of_top_emojis = 10
     nbr_of_top_characters = 10
-    nbr_of_top_words = 10
+    nbr_of_top_words = 20
 
     participants = fb.get_participants()
 
@@ -93,7 +93,7 @@ def main():
     # Generate PDF
     print(banner('Plots'))
     print('Generating PDF')
-    pb = ProgressBar(11, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    pb = ProgressBar(12, prefix = 'Progress:', suffix = 'Complete', length = 50)
 
     # Set appropriate filename
     names = ''
@@ -267,14 +267,63 @@ def main():
         pdf.savefig()
         plt.close()
         pb.printProgressBar()
+        
 
-        # Plot top words
-        plt.rcParams['font.family'] = 'Arial'
-        plt.barh(list(top_words.keys()), list(top_words.values()))
-        plt.title('Top {} Words'.format(nbr_of_top_words))
-        plt.xlabel('Frequency')
-        plt.ylabel('Words')
-        plt.tight_layout()
+        # Text statistics
+        plt.rcParams['font.family'] = ['Arial', 'Segoe UI Emoji']
+        plt.figure(figsize=(8.27, 11.69))
+        plt.title('Text Statistics', fontsize=16, fontweight='bold')
+        plt.axis('off')
+
+        text_stats = [
+            'Start: {}'.format(start),
+            'End: {}'.format(end),
+            'Number of days: {}'.format(nbr_days),
+            'Most messages in one day: {}'.format(max(nbr_times_day)),
+            'Number of messages: {}'.format(nbr_messages),
+            'Number of words: {}'.format(nbr_words),
+            'Number of characters: {}'.format(nbr_characters),
+            'Top {} characters: {}'.format(nbr_of_top_characters, list(top_characters.keys())),
+            'Average length of messages: {} words'.format(fb.get_avg_len_msg()),
+            'Average length of messages: {:.1f} characters'.format(nbr_characters/nbr_messages),
+            'Average length of word: {:.1f} characters'.format(nbr_characters/nbr_words),
+            'Average messages per day: {}'.format(fb.get_avg_msg_day()),
+        ]
+
+        emoji_stats = [
+            'Top {} emojis: {}'.format(nbr_of_top_emojis, top_emojis),
+            'Top {} reactions emojis: {}'.format(nbr_of_top_emojis, top_reactions_emojis)
+        ]
+
+        y = 0.95
+        for elem in text_stats:
+            plt.text(0.0, y, elem, fontsize=12, verticalalignment='center')
+            y -= 0.025
+        
+        for elem in emoji_stats:
+            plt.text(0.0, y, elem, fontsize=12, verticalalignment='center')
+            y -= 0.07
+
+        pdf.savefig()
+        plt.close()
+        pb.printProgressBar()
+
+        # Top words
+        plt.rcParams['font.family'] = ['Arial', 'Segoe UI Emoji']
+        plt.figure(figsize=(8.27, 11.69))
+        plt.title('Top words', fontsize=16, fontweight='bold')
+        plt.axis('off')
+
+        y = 0.95
+        x = 0.0
+        for j, word in enumerate(list(top_words.keys())):
+                plt.text(x, y - 0.025*(j+1), '{}. {}: {}'.format(j+1, list(top_words.keys())[j], list(top_words.values())[j]), fontsize=12, verticalalignment='center')
+        for i, p in enumerate(participants, 1):
+            y = 0.95
+            plt.text(x + 0.2*i, y, p.split()[0], fontsize=12, verticalalignment='center')
+            for j, word in enumerate(list(top_words_p[p].keys()), 1):
+                plt.text(x + 0.2*i, y - 0.025*j, '{}: {}'.format(word, top_words_p[p][word]), fontsize=12, verticalalignment='center')
+
         pdf.savefig()
         plt.close()
         pb.printProgressBar()
