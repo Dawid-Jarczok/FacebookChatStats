@@ -213,10 +213,10 @@ class FacebookMessengerConversation():
         Returns:
             tuple:  List of top emojis
                     Dict showing how many of these were sent by each participant
-                    Number of all emojis sent
+                    Dict showing number of all emojis sent by each participant
 
         """
-        all_emojis_count = 0
+        all_emojis_count = {p: 0 for p in self.p}
         emojis = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
         emojis_p = {p: 0 for p in self.p}
         for p in emojis_p:
@@ -230,14 +230,14 @@ class FacebookMessengerConversation():
                     if emoji_str in emojis and sender in emojis_p:
                         emojis_p[sender][emoji_str] += 1
                         emojis[emoji_str] += 1
-                        all_emojis_count += 1
+                        all_emojis_count[sender] += 1
         top_emojis = [emoji_key for emoji_key, count in sorted(emojis.items(),
                                        key=lambda kv: (-kv[1], kv[0]))[:nbr]]
         emojis_count_p = {p: {} for p in self.p}
         for p in self.p:
                 emojis_count_p[p] = [emojis_p[p][e] for e in top_emojis]
         top_emojis = [emoji.emojize(top_emoji) for top_emoji in top_emojis]
-        return top_emojis, emojis_count_p
+        return top_emojis, emojis_count_p, all_emojis_count
 
     def top_reactions_emojis(self, nbr):
         """Returns the top `nbr` emojis used in reactions and who sent them.
@@ -248,9 +248,11 @@ class FacebookMessengerConversation():
         Returns:
             tuple:  List of top reactions emojis
                     Dict showing how many of these were sent by each participant
+                    Dict showing number of all emojis sent by each participant
 
 
         """
+        all_emojis_count = {p: 0 for p in self.p}
         emojis = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
         emojis_p = {p: 0 for p in self.p}
         for p in emojis_p:
@@ -263,6 +265,7 @@ class FacebookMessengerConversation():
                     if emoji_str in emojis and actor in emojis_p:
                         emojis_p[actor][emoji_str] += 1
                         emojis[emoji_str] += 1
+                        all_emojis_count[actor] += 1
 
         top_emojis = [emoji_key for emoji_key, count in sorted(emojis.items(),
                                        key=lambda kv: (-kv[1], kv[0]))[:nbr]]
@@ -270,4 +273,4 @@ class FacebookMessengerConversation():
         for p in self.p:
                 emojis_count_p[p] = [emojis_p[p][e] for e in top_emojis]
         top_emojis = [emoji.emojize(top_emoji) for top_emoji in top_emojis]
-        return top_emojis, emojis_count_p
+        return top_emojis, emojis_count_p, all_emojis_count

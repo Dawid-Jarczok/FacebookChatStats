@@ -36,7 +36,7 @@ def main():
     print(banner('Totals'))
     activity = fb.activity()
     for i, (act_p, data) in enumerate(activity.items(), 1):
-        print('{}. {}: {} ({} %)'.format(i, act_p, data[0], data[1]))
+        print('{}. {}: {} ({:.1f} %)'.format(i, act_p, data[0], data[1]))
 
     nbr_days = fb.get_nbr_days()
     print('Number of days: {}'.format(nbr_days))
@@ -123,7 +123,7 @@ def main():
         plt.rcParams['font.family'] = 'Segoe UI Emoji'
         plt.gca().set_prop_cycle('color', colors)
 
-        top_emojis, emoji_count_p = fb.top_emojis(nbr_of_top_emojis)
+        top_emojis, emoji_count_p, emojis_all_count = fb.top_emojis(nbr_of_top_emojis)
         x = np.arange(len(top_emojis))
         bar_width = 0.8 / len(participants)  # Calculate the width of each bar
 
@@ -150,7 +150,7 @@ def main():
         plt.rcParams['font.family'] = 'Segoe UI Emoji'
         plt.gca().set_prop_cycle('color', colors)
 
-        top_reactions_emojis, emoji_reactions_count_p = fb.top_reactions_emojis(nbr_of_top_emojis)
+        top_reactions_emojis, emoji_reactions_count_p, emojis_reactions_all_count = fb.top_reactions_emojis(nbr_of_top_emojis)
         x = np.arange(len(top_reactions_emojis))
         bar_width = 0.8 / len(participants)  # Calculate the width of each bar
 
@@ -183,9 +183,22 @@ def main():
         d['ModDate'] = datetime.today()
 
     print('Most messages in one day: {}'.format(max(nbr_times_day)))
+
+    # Emojis
+    print(banner('Emojis'))
+    for i, p in enumerate(participants):
+        print('{}. {}:\t{}'.format(i, p, emojis_all_count[p]))
+
     print('Top {} emojis: {}'.format(nbr_of_top_emojis, top_emojis))
+
+    # Reactions emojis
+    print(banner('Reactions emojis'))
+    for i, p in enumerate(participants):
+        print('{}. {}:\t{}'.format(i, p, emojis_reactions_all_count[p]))
+
     print('Top {} reactions emojis: {}'.format(nbr_of_top_emojis, top_reactions_emojis))
-    print('PDF generated successfully!')
+
+    print('\nPDF generated successfully!')
 
 
 def banner(msg, ch='=', length=80):
