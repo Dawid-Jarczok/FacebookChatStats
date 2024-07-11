@@ -116,7 +116,7 @@ def main():
     # Set appropriate filename
     names = ''
     if len(participants) > 2:
-        names = 'Group_chat'
+        names = 'Group_chat' + fb.title
     else:
         for p in participants:
             name = p.split(' ')
@@ -330,10 +330,8 @@ def main():
             y -= 0.025
 
         s = ""
-        for i, p in enumerate(participants, 1):
-            if i > max_participants_on_plots:
-                break
-            s += '{}. {: <20}: {:2.1f} w/msg   {:2.1f} ch/msg   {:2.1f} ch/w'.format(i, p, nbr_words_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_words_p[p]) + '\n'
+        for i, p in enumerate(list(activity.keys())[:max_participants_on_plots], 1):
+            s += '{}. {: <25}: {:2.1f} w/msg   {:2.1f} ch/msg   {:2.1f} ch/w'.format(i, p, nbr_words_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_words_p[p]) + '\n'
             y -= 0.012
         plt.text(0.0, y, s, fontsize=12, verticalalignment='center')
 
