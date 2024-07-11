@@ -40,6 +40,12 @@ class FacebookMessengerConversation():
             if 'content' in message:
                 message['content'] = message['content'].encode(
                     'raw_unicode_escape').decode('utf-8')
+            if 'reactions' in message:
+                for reaction in message['reactions']:
+                    reaction['actor'] = reaction['actor'].encode(
+                        'raw_unicode_escape').decode('utf-8')
+                    reaction['reaction'] = reaction['reaction'].encode(
+                        'raw_unicode_escape').decode('utf-8')
 
         # Set names of conversation participants
         #nbr_participants = len(self.data['participants'])
@@ -329,7 +335,7 @@ class FacebookMessengerConversation():
                 for reaction in message['reactions']:
                     try:
                         actor = reaction['actor']
-                        emoji_str = emoji.demojize(reaction['reaction'].encode("raw_unicode_escape").decode("utf-8"))
+                        emoji_str = emoji.demojize(reaction['reaction'])
                         if emoji_str in emojis and actor in emojis_p:
                             emojis_p[actor][emoji_str] += 1
                             emojis[emoji_str] += 1
@@ -422,3 +428,39 @@ class FacebookMessengerConversation():
         top_words_p = {p: {word_key: count for word_key, count in sorted(words_p[p].items(),
                            key=lambda kv: (-kv[1], kv[0]))[:nbr]} for p in self.p}
         return top_words_p
+    
+    def top_participants_in_words(self, nbr):
+        """Returns the top `nbr` participants who used the most words, last is rest
+
+        Args:
+            nbr (int): The number of participants to include in top list.
+
+        Returns:
+            Dict showing the top participants who used the most words with their counts
+
+        """
+        nbr_words_p = self.get_nbr_words_p()
+
+        top_participants_in_words = {p: nbr_words_p[p] for p in list(nbr_words_p)[:nbr]}
+
+        if len(self.p) > nbr:
+            top_participants_in_words['Rest'] = sum(nbr_words_p.values()) - sum(top_participants_in_words.values())
+        return top_participants_in_words
+    
+    def top_participants_in_characters(self, nbr):
+        """Returns the top `nbr` participants who used the most characters, last is rest
+
+        Args:
+            nbr (int): The number of participants to include in top list.
+
+        Returns:
+            Dict showing the top participants who used the most characters with their counts
+
+        """
+        nbr_characters_p = self.get_nbr_characters_p()
+
+        top_participants_in_characters = {p: nbr_characters_p[p] for p in list(nbr_characters_p)[:nbr]}
+
+        if len(self.p) > nbr:
+            top_participants_in_characters['Rest'] = sum(nbr_characters_p.values()) - sum(top_participants_in_characters.values())
+        return top_participants_in_characters
