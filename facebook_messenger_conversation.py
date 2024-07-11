@@ -7,6 +7,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from datetime import datetime, timedelta
 import matplotlib.dates as mdates
 import emoji
+import os
 
 
 class FacebookMessengerConversation():
@@ -28,13 +29,43 @@ class FacebookMessengerConversation():
                 212802592074644?helpref=uf_permalink)
 
         """
-        self.data = json.load(open(conversation))
-        self.title = self.data['title']
+        max_files_number = 10
+
+        self.data, self.p = self.read_conversation(conversation)
+
+        if "_1.json" in conversation:
+            print("Detected potential multiple files")
+            file_number = 1
+            for i in range(2, max_files_number + 1):
+                next_file_path = conversation.replace("_1.json", f"_{file_number + 1}.json")
+                if os.path.isfile(next_file_path):
+                    file_number += 1
+                    print("File {} exists".format(next_file_path.split('\\')[-1]))
+                    data, p = self.read_conversation(next_file_path)
+                    self.data = self.join_data(self.data, data)
+                    self.p = list(set(self.p + p))
+                else:
+                    break
+            print("Readed {} files".format(file_number))
+
+        self.title = str(self.data['title'])
+
+
+    def read_conversation(self, conversation):
+        """ Reads a conversation from a JSON file and returns the data and participants.
+
+            Args:
+                conversation (json): Path to json file
+
+            Returns:
+                tuple: data (dict), participants (list)
+        """
+        data = json.load(open(conversation))
 
         # Convert unicode characters
-        for p in self.data['participants']:
+        for p in data['participants']:
             p['name'] = p['name'].encode('raw_unicode_escape').decode('utf-8')
-        for message in self.data['messages']:
+        for message in data['messages']:
             message['sender_name'] = message['sender_name'].encode(
                 'raw_unicode_escape').decode('utf-8')
             if 'content' in message:
@@ -46,21 +77,33 @@ class FacebookMessengerConversation():
                         'raw_unicode_escape').decode('utf-8')
                     reaction['reaction'] = reaction['reaction'].encode(
                         'raw_unicode_escape').decode('utf-8')
-
-        # Set names of conversation participants
-        #nbr_participants = len(self.data['participants'])
-        #self.p = nbr_participants * [None]
-        #for i in range(nbr_participants):
-        #    self.p[i] = self.data['participants'][i]['name']
-
-        # For group chats where the participants left the chat
-        nbr_participants = 0
-        self.p = []
-        for message in self.data['messages']:
+                    
+        p = []
+        for message in data['messages']:
             if 'sender_name' in message:
-                if message['sender_name'] not in self.p and len(message['sender_name']) > 0:
-                    self.p.append(message['sender_name'])
-                    nbr_participants += 1
+                if message['sender_name'] not in p and len(message['sender_name']) > 0:
+                    p.append(message['sender_name'])
+
+        return data, p
+
+    def join_data(self, data_1, data_2):
+        """ Joins two conversations together
+
+            Args:
+                data_1 (dict): First conversation data
+                data_2 (dict): Second conversation data
+
+            Returns:
+                dict: Combined conversation
+        """
+        new_data = data_1
+        new_data['participants'].extend(data_2['participants'])
+        new_data['messages'].extend(data_2['messages'])
+        new_data['magic_words'].extend(data_2['magic_words'])
+        if new_data['title'] != data_2['title']:
+            new_data['title'] = "multiple conversations"
+            new_data.pop('thread_path')
+        return new_data
 
     def get_participants(self):
         """Returns the names of the conversation participants.
