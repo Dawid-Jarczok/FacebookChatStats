@@ -71,12 +71,14 @@ class FacebookMessengerConversation():
             if 'content' in message:
                 message['content'] = message['content'].encode(
                     'raw_unicode_escape').decode('utf-8')
+                message['content'] = self.interpret_emojis(message['content'])
             if 'reactions' in message:
                 for reaction in message['reactions']:
                     reaction['actor'] = reaction['actor'].encode(
                         'raw_unicode_escape').decode('utf-8')
                     reaction['reaction'] = reaction['reaction'].encode(
                         'raw_unicode_escape').decode('utf-8')
+                    reaction['reaction'] = self.interpret_emojis(reaction['reaction'])
                     
         p = []
         for message in data['messages']:
@@ -85,6 +87,24 @@ class FacebookMessengerConversation():
                     p.append(message['sender_name'])
 
         return data, p
+
+    def interpret_emojis(self, word : str):
+        """Interprets unknown emojis in a word
+
+        Args:
+            word (str): Word to interpret
+
+        Returns:
+            str: Interpreted word
+
+        """
+        unknonw_emojis = {
+            '\U000fe334' : '🤣' # Rolling On the Floor Laughing
+            }
+        for c in word:
+            if c in unknonw_emojis:
+                word = word.replace(c, unknonw_emojis[c])
+        return word
 
     def join_data(self, data_1, data_2):
         """ Joins two conversations together
