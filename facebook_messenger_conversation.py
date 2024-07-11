@@ -251,7 +251,7 @@ class FacebookMessengerConversation():
         for message in self.data['messages']:
             if 'content' in message:
                 nbr_words += len(message['content'].split())
-        nbr_words = min(nbr_words, 1)
+        nbr_words = max(nbr_words, 1)
         return nbr_words
     
     def get_nbr_words_p(self):

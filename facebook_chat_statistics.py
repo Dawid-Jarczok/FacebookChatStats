@@ -55,7 +55,7 @@ def main():
     top_words_p = fb.top_words_p(nbr_of_top_words)
 
     nbr_characters_p = fb.get_nbr_characters_p()
-    nbr_characters = sum(nbr_characters_p.values())
+    nbr_characters = max(sum(nbr_characters_p.values()), 1)
     top_characters = fb.top_characters(nbr_of_top_characters)
 
     top_emojis, emoji_count_p, emojis_all_count = fb.top_emojis(nbr_of_top_emojis)
