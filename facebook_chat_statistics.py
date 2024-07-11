@@ -251,9 +251,9 @@ def main():
                 # Calculate the x values for the current participant
                 x_offset = i * bar_width - (0.4 - bar_width / 2)
                 plt.bar(x + x_offset, emoji_count_p[participant], align='center', width=bar_width, label=participant)
-            plt.legend(list(emoji_count_p.keys()),
-                   loc='upper left',
-                   bbox_to_anchor=(-0.15, 1.15))
+            plt.legend(list(emoji_reactions_count_p.keys()),
+                       loc='upper right',
+                       bbox_to_anchor=(1.15, 1.15))
         else:
             plt.bar(x, [sum(val[i] for val in emoji_count_p.values()) for i in range(nbr_of_top_emojis)], align='center')
 
@@ -285,8 +285,8 @@ def main():
                 x_offset = i * bar_width - (0.4 - bar_width / 2)
                 plt.bar(x + x_offset, emoji_reactions_count_p[participant], align='center', width=bar_width, label=participant)
             plt.legend(list(emoji_reactions_count_p.keys()),
-                   loc='upper left',
-                   bbox_to_anchor=(-0.15, 1.15))
+                       loc='upper right',
+                       bbox_to_anchor=(1.15, 1.15))
         else:
             plt.bar(x, [sum(val[i] for val in emoji_reactions_count_p.values()) for i in range(nbr_of_top_emojis)], align='center')
             
