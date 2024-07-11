@@ -123,6 +123,10 @@ def main():
         names = names[:-1]
     filename = fb.title + '.pdf'
 
+    # Creating the results directory if it doesn't exist
+    if not os.path.exists('results'):
+        os.makedirs('results')
+
     with PdfPages(os.path.join('results', filename)) as pdf:
         #participants_on_plots = participants[:max_participants_on_plots] + (['Rest'] if len(participants) > max_participants_on_plots else [])
 
