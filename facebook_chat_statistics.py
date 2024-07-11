@@ -35,7 +35,7 @@ def main():
 
     participants = fb.get_participants()
     if (len(participants) > 5):
-        nbr_of_top_words = min(nbr_of_top_words, 5)
+        nbr_of_top_words = min(nbr_of_top_words, 10)
 
     print(banner('Times'))
     start, end = fb.get_time_interval('str')
@@ -125,7 +125,7 @@ def main():
     filename = os.path.splitext(os.path.basename(sys.argv[1]))[0] + '.pdf'
 
     with PdfPages(os.path.join('results', filename)) as pdf:
-        participants_on_plots = participants[:max_participants_on_plots] + (['Rest'] if len(participants) > max_participants_on_plots else [])
+        #participants_on_plots = participants[:max_participants_on_plots] + (['Rest'] if len(participants) > max_participants_on_plots else [])
 
         # Plot participants messages percentage
         # Set a wider range of colors for the color cycle
@@ -133,6 +133,7 @@ def main():
         plt.gca().set_prop_cycle('color', colors)
         fracs = [activity[act_p][0] for act_p in activity][:max_participants_on_plots]
         # Add the rest of the participants
+        participants_on_plots = list(activity.keys())[:max_participants_on_plots] + (['Rest'] if len(participants) > max_participants_on_plots else [])
         if len(participants) > max_participants_on_plots:
             fracs.append(nbr_messages - sum(fracs))
         plt.pie(fracs, startangle=90, autopct='%1.1f%%')
@@ -149,12 +150,9 @@ def main():
         # Set a wider range of colors for the color cycle
         colors = plt.cm.tab20(np.linspace(0, 1, 20))
         plt.gca().set_prop_cycle('color', colors)
-        fracs = [100*nbr_words_p[p]/nbr_words for p in participants][:max_participants_on_plots]
-        # Add the rest of the participants
-        if len(participants) > max_participants_on_plots:
-            fracs.append(100 - sum(fracs))
-        plt.pie(fracs, startangle=90, autopct='%1.1f%%')
-        plt.legend(participants_on_plots,
+        top_participants_in_words = fb.top_participants_in_words(max_participants_on_plots)
+        plt.pie(list(top_participants_in_words.values()), startangle=90, autopct='%1.1f%%')
+        plt.legend(list(top_participants_in_words.keys()),
                    loc='upper left',
                    bbox_to_anchor=(-0.15, 1.15))
         plt.axis('equal')
@@ -167,12 +165,9 @@ def main():
         # Set a wider range of colors for the color cycle
         colors = plt.cm.tab20(np.linspace(0, 1, 20))
         plt.gca().set_prop_cycle('color', colors)
-        fracs = [100*nbr_characters_p[p]/nbr_characters for p in participants][:max_participants_on_plots]
-        # Add the rest of the participants
-        if len(participants) > max_participants_on_plots:
-            fracs.append(100 - sum(fracs))
-        plt.pie(fracs, startangle=90, autopct='%1.1f%%')
-        plt.legend(participants_on_plots,
+        top_participants_in_characters = fb.top_participants_in_characters(max_participants_on_plots)
+        plt.pie(list(top_participants_in_characters.values()), startangle=90, autopct='%1.1f%%')
+        plt.legend(list(top_participants_in_characters.keys()),
                    loc='upper left',
                    bbox_to_anchor=(-0.15, 1.15))
         plt.axis('equal')

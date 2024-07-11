@@ -428,3 +428,39 @@ class FacebookMessengerConversation():
         top_words_p = {p: {word_key: count for word_key, count in sorted(words_p[p].items(),
                            key=lambda kv: (-kv[1], kv[0]))[:nbr]} for p in self.p}
         return top_words_p
+    
+    def top_participants_in_words(self, nbr):
+        """Returns the top `nbr` participants who used the most words, last is rest
+
+        Args:
+            nbr (int): The number of participants to include in top list.
+
+        Returns:
+            Dict showing the top participants who used the most words with their counts
+
+        """
+        nbr_words_p = self.get_nbr_words_p()
+
+        top_participants_in_words = {p: nbr_words_p[p] for p in list(nbr_words_p)[:nbr]}
+
+        if len(self.p) > nbr:
+            top_participants_in_words['Rest'] = sum(nbr_words_p.values()) - sum(top_participants_in_words.values())
+        return top_participants_in_words
+    
+    def top_participants_in_characters(self, nbr):
+        """Returns the top `nbr` participants who used the most characters, last is rest
+
+        Args:
+            nbr (int): The number of participants to include in top list.
+
+        Returns:
+            Dict showing the top participants who used the most characters with their counts
+
+        """
+        nbr_characters_p = self.get_nbr_characters_p()
+
+        top_participants_in_characters = {p: nbr_characters_p[p] for p in list(nbr_characters_p)[:nbr]}
+
+        if len(self.p) > nbr:
+            top_participants_in_characters['Rest'] = sum(nbr_characters_p.values()) - sum(top_participants_in_characters.values())
+        return top_participants_in_characters
