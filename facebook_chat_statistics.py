@@ -116,13 +116,16 @@ def main():
     # Set appropriate filename
     names = ''
     if len(participants) > 2:
-        names = 'Group_chat' + fb.title
+        names = 'Group chat: ' + fb.title
     else:
         for p in participants:
-            name = p.split(' ')
-            names += '{}_{}_'.format(name[0], name[1])
+            names += p + ', '
         names = names[:-1]
-    filename = os.path.splitext(os.path.basename(sys.argv[1]))[0] + '.pdf'
+    filename = fb.title + '.pdf'
+
+    # Creating the results directory if it doesn't exist
+    if not os.path.exists('results'):
+        os.makedirs('results')
 
     with PdfPages(os.path.join('results', filename)) as pdf:
         #participants_on_plots = participants[:max_participants_on_plots] + (['Rest'] if len(participants) > max_participants_on_plots else [])
@@ -379,15 +382,14 @@ def main():
 
         # PDF info
         d = pdf.infodict()
-        d['Title'] = filename.replace('_', ' ')
+        d['Title'] = filename
         d['Author'] = 'Facebook Chat Statistics'
-        d['Subject'] = 'Conversation statistics between {}'.format(
-            names.replace('_', ' '))
+        d['Subject'] = 'Conversation: {}'.format(names)
         d['CreationDate'] = datetime.today()
         d['ModDate'] = datetime.today()
 
     pb.printProgressBar()
-    print('\nPDF generated successfully!')
+    print('\nPDF \'{}\' generated successfully!'.format(filename))
 
 
 def banner(msg, ch='=', length=80):
