@@ -34,8 +34,6 @@ def main():
     pdf_fonts = ['Arial', 'Segoe UI Emoji']
 
     participants = fb.get_participants()
-    if (len(participants) > 5):
-        nbr_of_top_words = min(nbr_of_top_words, 10)
 
     print(banner('Times'))
     start, end = fb.get_time_interval('str')
@@ -62,10 +60,10 @@ def main():
     for i, p in enumerate(nbr_words_p, 1):
         print('{}. {: <20}: {} ({:.3} %)'.format(i, p, nbr_words_p[p], 100*nbr_words_p[p]/nbr_words))
     top_words = fb.top_words(nbr_of_top_words)
-    print('Top {} words: {}'.format(nbr_of_top_words, list(top_words.keys())))
+    print('Top {} words: {}'.format(min(nbr_of_top_words, 10), list(top_words.keys())[:10]))
     top_words_p = fb.top_words_p(nbr_of_top_words)
     for i, p in enumerate(top_words_p, 1):
-        print('{}. {: <20}: {}'.format(i, p, list(top_words_p[p].keys())))
+        print('{}. {: <20}: {}'.format(i, p, list(top_words_p[p].keys())[:10]))
     
     print(banner('Characters'))
     nbr_characters_p = fb.get_nbr_characters_p()
@@ -390,6 +388,88 @@ def main():
 
     pb.printProgressBar()
     print('\nPDF \'{}\' generated successfully!'.format(filename))
+
+    # Create a text file for better readability of statistics especialy for large groups chats
+    txt_filename = fb.title + '.txt'
+    txt_file_path = os.path.join('results', txt_filename)
+    with open(txt_file_path, 'w', encoding='utf8') as txt:
+        txt.write(banner('Times') + '\n')
+        txt.write('Start: {}\nEnd: {}\n'.format(start, end))
+        txt.write('Number of days: {}\n'.format(nbr_days))
+        txt.write('Number of days active: {} ({:.3} %)\n'.format(nbr_days_active, 100*nbr_days_active/nbr_days))
+        txt.write('Most messages in one day: {}\n'.format(max(nbr_times_day)))
+
+        txt.write(banner('Messages') + '\n')
+        txt.write('Number of messages: {}\n'.format(nbr_messages))
+        for i, (act_p, data) in enumerate(activity.items(), 1):
+            txt.write('{: >3}. {: <25}: {} ({:.3} %)\n'.format(i, act_p, data[0], data[1]))
+
+        txt.write(banner('Words') + '\n')
+        txt.write('Number of words: {}\n'.format(nbr_words))
+        for i, p in enumerate(nbr_words_p, 1):
+            txt.write('{: >3}. {: <25}: {} ({:.3} %)\n'.format(i, p, nbr_words_p[p], 100*nbr_words_p[p]/nbr_words))
+        
+        txt.write(banner('Characters') + '\n')
+        txt.write('Number of characters: {}\n'.format(nbr_characters))
+        txt.write('Top {} characters: {}\n'.format(nbr_of_top_characters, list(top_characters.keys())))
+        for i, p in enumerate(nbr_characters_p, 1):
+            txt.write('{: >3}. {: <25}: {} ({:.3} %)\n'.format(i, p, nbr_characters_p[p], 100*nbr_characters_p[p]/nbr_characters))
+
+        txt.write(banner('Averages') + '\n')
+        txt.write('Average length of messages: {} words\n'.format(fb.get_avg_len_msg()))
+        txt.write('Average length of messages: {:.1f} characters\n'.format(nbr_characters/nbr_messages))
+        txt.write('Average length of word: {:.1f} characters\n'.format(nbr_characters/nbr_words))
+        for i, p in enumerate(nbr_words_p, 1):
+            txt.write('{: >3}. {: <25}: {:.1f} w/msg\t{:.1f} ch/msg\t{:.1f} ch/w\n'.format(i, p, nbr_words_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_words_p[p]))
+        txt.write('Average messages per day: {}\n'.format(fb.get_avg_msg_day()))
+
+        # Emojis
+        txt.write(banner('Emojis') + '\n')
+        txt.write('Top {} emojis: {}\n'.format(nbr_of_top_emojis, top_emojis))
+        for i, p in enumerate(emojis_all_count, 1):
+            txt.write('{: >3}. {: <25}: {}\n'.format(i, p, emojis_all_count[p]))
+
+        # Reactions emojis
+        txt.write(banner('Reactions emojis') + '\n')
+        txt.write('Top {} reactions emojis: {}\n'.format(nbr_of_top_emojis, top_reactions_emojis))
+        for i, p in enumerate(emojis_reactions_all_count, 1):
+            txt.write('{: >3}. {: <25}: {}\n'.format(i, p, emojis_reactions_all_count[p]))
+
+        txt.write(banner('Top words') + '\n')
+        if len(participants) <= 10:
+            column_width = 25
+            for i in range(0, len(participants) + 1):
+                if i == 0:
+                    txt.write('Top words'.ljust(column_width))
+                else:
+                    txt.write((str(i) + '. ' + participants[i-1]).ljust(column_width))
+            txt.write('\n')
+            for i in range(nbr_of_top_words):
+                txt.write('{}. {} ({})'.format(i + 1, list(top_words.keys())[i], list(top_words.values())[i]).ljust(column_width))
+                for j, p in enumerate(top_words_p, 1):
+                    if i < len(list(top_words_p[p].keys())):
+                        txt.write('{} ({})'.format(list(top_words_p[p].keys())[i], list(top_words_p[p].values())[i]).ljust(column_width))
+                    else:
+                        txt.write(' '.ljust(column_width))
+                txt.write('\n')
+        else:
+            #Writing with tabulation for importing to excel
+            for i in range(0, len(participants) + 1):
+                if i == 0:
+                    txt.write('Top words\t')
+                else:
+                    txt.write((str(i) + '. ' + participants[i-1]) + '\t')
+            txt.write('\n')
+            for i in range(nbr_of_top_words):
+                txt.write('{}. {} ({})'.format(i + 1, list(top_words.keys())[i], list(top_words.values())[i]) + '\t')
+                for j, p in enumerate(top_words_p, 1):
+                    if i < len(list(top_words_p[p].keys())):
+                        txt.write('{} ({})'.format(list(top_words_p[p].keys())[i], list(top_words_p[p].values())[i]) + '\t')
+                    else:
+                        txt.write(' \t')
+                txt.write('\n')
+
+    print('\ntxt \'{}\' generated successfully!'.format(txt_filename))
 
 
 def banner(msg, ch='=', length=80):
