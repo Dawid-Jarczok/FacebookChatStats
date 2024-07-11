@@ -311,7 +311,7 @@ def main():
         plt.gca().set_prop_cycle('color', colors)
         fracs = [top_characters[c] for c in top_characters]
         # Add the percentage of the rest of the characters
-        fracs.append(sum(list(top_characters.values())) - sum(fracs))
+        fracs.append(nbr_characters - sum(fracs))
         plt.pie(fracs, startangle=90, autopct='%1.1f%%')
         plt.legend(list(top_characters.keys()) + ['Rest'],
                    loc='upper left',
