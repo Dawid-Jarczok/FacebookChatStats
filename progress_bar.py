@@ -19,6 +19,13 @@ class ProgressBar:
     self.fill = fill
     self.printEnd = printEnd
     self.last_iteration = 0
+    self.on()
+  
+  def on(self):
+    self.on_ = True
+
+  def off(self):
+    self.on_ = False
 
   # Print iterations progress
   def printProgressBar(self, iteration : int = None):
@@ -27,6 +34,8 @@ class ProgressBar:
         @params:
             iteration   - Optional  : current iteration (Int), default increases by 1
       """
+      if not self.on_:
+          return
       if iteration is None:
         self.iteration = self.last_iteration + 1
       else:
