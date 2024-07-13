@@ -30,6 +30,8 @@ class FacebookMessengerConversation():
 
         """
         max_files_number = 10
+        self.words_strip = ',.()?!@#$%^&*/_:;/\\"' # Characters to strip from words
+        self.words_not_lower = ['xD', 'XD'] # Words that should not be lowercased
 
         self.data, self.p = self.read_conversation(conversation)
 
@@ -103,7 +105,6 @@ class FacebookMessengerConversation():
             '\U000fe332' : '\U0001f606', # SMILING FACE WITH OPEN MOUTH AND TIGHTLY-CLOSED EYES
             '\U000fe334' : '\U0001f602', # FACE WITH TEARS OF JOY"
             '\U000fe335' : '\U0001f60a', # SMILING FACE WITH SMILING EYES
-            '\U000fe33e' : '\U0001f60c', # RELIEVED FACE
             '\U000fe343' : '\U0001f60f', # SMIRKING FACE
             '\U000fe516' : '\U0001f388', # BALLOON
 
@@ -463,8 +464,11 @@ class FacebookMessengerConversation():
         words = {}
         for message in self.data['messages']:
             if 'content' in message:
-                msg = message['content']
+                msg : str = message['content']
                 for word in msg.split():
+                    word = word.strip(self.words_strip)
+                    if word not in self.words_not_lower:
+                        word = word.lower()
                     if word in words:
                         words[word] += 1
                     else:
@@ -489,9 +493,12 @@ class FacebookMessengerConversation():
         for message in self.data['messages']:
             if 'content' in message:
                 try:
-                    msg = message['content']
+                    msg : str = message['content']
                     sender = message['sender_name']
                     for word in msg.split():
+                        word = word.strip(self.words_strip)
+                        if word not in self.words_not_lower:
+                            word = word.lower()
                         if word in words_p[sender]:
                             words_p[sender][word] += 1
                         else:
