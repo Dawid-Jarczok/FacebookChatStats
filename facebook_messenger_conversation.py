@@ -99,53 +99,17 @@ class FacebookMessengerConversation():
 
         """
         unknonw_emojis = {
-            '\U000fe330' : '😀', # Grinning Face
-            '\U000fe331' : '😃', # Smiling Face with Open Mouth
-            '\U000fe332' : '😄', # Smiling Face with Open Mouth and Smiling Eyes
-            '\U000fe333' : '😁', # Grinning Face with Smiling Eyes
-            '\U000fe334' : '🤣', # Rolling On the Floor Laughing
-            '\U000fe335' : '😂', # Face with Tears of Joy
-            '\U000fe336' : '😍', # Heart Eyes
-            '\U000fe337' : '😘', # Face Blowing a Kiss
-            '\U000fe338' : '😊', # Smiling Face with Smiling Eyes
-            '\U000fe339' : '😉', # Winking Face
-            '\U000fe33a' : '😎', # Smiling Face with Sunglasses
-            '\U000fe33b' : '😜', # Winking Face with Tongue
-            '\U000fe33c' : '😝', # Squinting Face with Tongue
-            '\U000fe33d' : '😛', # Face with Tongue
-            '\U000fe33e' : '🤪', # Zany Face
-            '\U000fe33f' : '😤', # Face with Steam From Nose
-            '\U000fe340' : '😡', # Pouting Face
-            '\U000fe341' : '😢', # Crying Face
-            '\U000fe342' : '😭', # Loudly Crying Face
-            '\U000fe343' : '😱', # Face Screaming in Fear
-            '\U000fe344' : '😨', # Fearful Face
-            '\U000fe345' : '😰', # Anxious Face with Sweat
-            '\U000fe346' : '😥', # Sad but Relieved Face
-            '\U000fe347' : '😓', # Face with Cold Sweat
-            '\U000fe348' : '😴', # Sleeping Face
-            '\U000fe349' : '🤢', # Nauseated Face
-            '\U000fe34a' : '🤮', # Face Vomiting
-            '\U000fe34b' : '🤧', # Sneezing Face
-            '\U000fe34c' : '🥵', # Hot Face
-            '\U000fe34d' : '🥶', # Cold Face
-            '\U000fe34e' : '🥴', # Woozy Face
-            '\U000fe34f' : '😵', # Dizzy Face
-            '\U000fe350' : '🤯', # Exploding Head
-            '\U000fe351' : '🤠', # Cowboy Hat Face
-            '\U000fe352' : '🥳', # Partying Face
-            '\U000fe353' : '🥺', # Pleading Face
-            '\U000fe354' : '🤓', # Nerd Face
-            '\U000fe355' : '🤥', # Lying Face
-            '\U000fe356' : '🤫', # Shushing Face
-            '\U000fe357' : '🤭', # Face with Hand Over Mouth
-            '\U000fe358' : '🧐', # Face with Monocle
-            '\U000fe359' : '🤔', # Thinking Face
-            '\U000fe35a' : '🤥', # Lying Face
-            '\U000fe35b' : '🤫', # Shushing Face
-            '\U000fe35c' : '🤭', # Face with Hand Over Mouth
-            '\U000fe35d' : '🧐', # Face with Monocle
-            '\U000fe35e' : '🤔', # Thinking Face
+            '\U000fe32a' : '\U0001f61d', # FACE WITH STUCK-OUT TONGUE AND TIGHTLY-CLOSED EYES
+            '\U000fe332' : '\U0001f606', # SMILING FACE WITH OPEN MOUTH AND TIGHTLY-CLOSED EYES
+            '\U000fe334' : '\U0001f602', # FACE WITH TEARS OF JOY"
+            '\U000fe335' : '\U0001f60a', # SMILING FACE WITH SMILING EYES
+            '\U000fe33e' : '\U0001f60c', # RELIEVED FACE
+            '\U000fe343' : '\U0001f60f', # SMIRKING FACE
+            '\U000fe516' : '\U0001f388', # BALLOON
+
+            '\u2661'     : '\U0001f90d', # WHITE HEART SUIT
+
+            '\U000fec00' : 'UNKNOWN EMOJI',
         }
         for c in word:
             if c in unknonw_emojis:
