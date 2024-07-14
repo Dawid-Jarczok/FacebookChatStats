@@ -61,6 +61,9 @@ def main():
     top_emojis, emoji_count_p, emojis_all_count = fb.top_emojis(nbr_of_top_emojis)
     top_reactions_emojis, emoji_reactions_count_p, emojis_reactions_all_count = fb.top_reactions_emojis(nbr_of_top_emojis)
 
+    nbr_editions_p = fb.get_nbr_editions_p()
+    nbr_editions = sum(nbr_editions_p.values())
+
     if print_in_terminal:
         print(banner('Times'))
         print('Start: {}\nEnd: {}'.format(start, end))
@@ -85,25 +88,32 @@ def main():
         print(banner('Characters'))
         print('Number of characters: {}'.format(nbr_characters))
         for i, p in enumerate(nbr_characters_p, 1):
-            if nbr_characters_p[p] == 0:
+            if len(participants) > 10 and nbr_characters_p[p] == 0:
                 continue
             print('{}. {: <20}: {} ({:.3} %)'.format(i, p, nbr_characters_p[p], 100*nbr_characters_p[p]/nbr_characters))
         print('Top {} characters: {}'.format(nbr_of_top_characters, list(top_characters.keys())))
 
         print(banner('Averages'))
+        print('Average messages per day: {}'.format(fb.get_avg_msg_day()))
         print('Average length of messages: {} words'.format(fb.get_avg_len_msg()))
         print('Average length of messages: {:.1f} characters'.format(nbr_characters/nbr_messages))
         print('Average length of word: {:.1f} characters'.format(nbr_characters/nbr_words))
         for i, p in enumerate(nbr_words_p, 1):
-            if nbr_words_p[p] == 0:
+            if len(participants) > 10 and nbr_words_p[p] == 0:
                 continue
             print('{}. {: <20}: {:.1f} w/msg\t{:.1f} ch/msg\t{:.1f} ch/w'.format(i, p, nbr_words_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_words_p[p]))
-        print('Average messages per day: {}'.format(fb.get_avg_msg_day()))
+
+        print(banner('Edits'))
+        print('Number of editions: {}'.format(nbr_editions))
+        for i, p in enumerate(nbr_editions_p, 1):
+            if len(participants) > 10 and nbr_editions_p[p] == 0:
+                continue
+            print('{}. {: <20}: {}'.format(i, p, nbr_editions_p[p]))
 
         # Emojis
         print(banner('Emojis'))
         for i, p in enumerate(emojis_all_count, 1):
-            if emojis_all_count[p] == 0:
+            if len(participants) > 10 and emojis_all_count[p] == 0:
                 continue
             print('{}. {: <20}: {}'.format(i, p, emojis_all_count[p]))
 
@@ -112,7 +122,7 @@ def main():
         # Reactions emojis
         print(banner('Reactions emojis'))
         for i, p in enumerate(emojis_reactions_all_count, 1):
-            if emojis_reactions_all_count[p] == 0:
+            if len(participants) > 10 and emojis_reactions_all_count[p] == 0:
                 continue
             print('{}. {: <20}: {}'.format(i, p, emojis_reactions_all_count[p]))
 
@@ -122,7 +132,7 @@ def main():
         print(banner('Plots'))
         print('Generating PDF')
 
-    pb = ProgressBar(12, prefix = fb.title, suffix = 'Complete', length = 50)
+    pb = ProgressBar(13, prefix = fb.title, suffix = 'Complete', length = 50)
     if not print_in_terminal: pb.off()
 
     # Set appropriate filename
@@ -189,6 +199,23 @@ def main():
         plt.title('Characters')
         pdf.savefig()
         plt.close()
+        pb.printProgressBar()
+
+        # Older versions of the chat do not have editions
+        if nbr_editions > 0:
+            # Plot participants editions percentage
+            colors = plt.cm.tab20(np.linspace(0, 1, 20))
+            plt.gca().set_prop_cycle('color', colors)
+            top_participants_in_editions = fb.top_participants_in_editions(max_participants_on_plots)
+            plt.pie(list(top_participants_in_editions.values()), startangle=90, autopct='%1.1f%%')
+            plt.legend(list(top_participants_in_editions.keys()),
+                    loc='upper left',
+                    bbox_to_anchor=(-0.15, 1.15))
+            plt.axis('equal')
+            plt.title('Messages editions')
+            pdf.savefig()
+            plt.close()
+
         pb.printProgressBar()
 
         # Plot timeline
@@ -343,6 +370,7 @@ def main():
             'Average length of messages: {:.1f} characters'.format(nbr_characters/nbr_messages),
             'Average length of word: {:.1f} characters'.format(nbr_characters/nbr_words),
             'Average messages per day: {}'.format(fb.get_avg_msg_day()),
+            'Number of editions: {}'.format(nbr_editions),
         ]
 
         y = 1.0
@@ -372,7 +400,7 @@ def main():
             if emojis_reactions_all_count[p] == 0:
                 continue
             s += f'{i}. {p}: {emojis_reactions_all_count[p]}' + '\n'
-        plt.text(0.0, 0.18, s, fontsize=12, verticalalignment='center')
+        plt.text(0.0, 0.16, s, fontsize=12, verticalalignment='center')
 
         pdf.savefig()
         plt.close()
@@ -442,6 +470,11 @@ def main():
         for i, p in enumerate(nbr_words_p, 1):
             txt.write('{: >3}. {: <25}: {:.1f} w/msg\t{:.1f} ch/msg\t{:.1f} ch/w\n'.format(i, p, nbr_words_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_messages_p[p], nbr_characters_p[p]/nbr_words_p[p]))
         txt.write('Average messages per day: {}\n'.format(fb.get_avg_msg_day()))
+
+        txt.write(banner('Edits') + '\n')
+        txt.write('Number of editions: {}\n'.format(nbr_editions))
+        for i, p in enumerate(nbr_editions_p, 1):
+            txt.write('{: >3}. {: <25}: {}\n'.format(i, p, nbr_editions_p[p]))
 
         # Emojis
         txt.write(banner('Emojis') + '\n')

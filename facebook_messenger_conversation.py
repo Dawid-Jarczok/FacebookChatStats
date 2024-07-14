@@ -215,7 +215,10 @@ class FacebookMessengerConversation():
         nbr_words = 0
         for message in self.data['messages']:
             if 'content' in message:
-                nbr_words += len(message['content'].split())
+                words = message['content'].split()
+                nbr_words += len(words)
+                if words[-1] == '(edited)':
+                    nbr_words -= 1
         nbr_words = max(nbr_words, 1)
         return nbr_words
     
@@ -231,7 +234,10 @@ class FacebookMessengerConversation():
             if 'content' in message:
                 try:
                     sender = message['sender_name']
-                    nbr_words_p[sender] += len(message['content'].split())
+                    words = message['content'].split()
+                    nbr_words_p[sender] += len(words)
+                    if words[-1] == '(edited)':
+                        nbr_words_p[sender] -= 1
                 except KeyError:
                     pass
         nbr_words_p = {p: nbr_words_p[p] if nbr_words_p[p] > 0 else 1 for p in nbr_words_p}
@@ -251,6 +257,8 @@ class FacebookMessengerConversation():
                 try:
                     sender = message['sender_name']
                     nbr_characters_p[sender] += len(message['content'])
+                    if message['content'].endswith(' (edited)'):
+                        nbr_characters_p[sender] -= 9
                 except KeyError:
                     pass
         nbr_characters_p_sorted = dict(sorted(nbr_characters_p.items(), key=lambda item: item[1], reverse=True))
@@ -463,16 +471,19 @@ class FacebookMessengerConversation():
         """
         words = {}
         for message in self.data['messages']:
-            if 'content' in message:
-                msg : str = message['content']
-                for word in msg.split():
-                    word = word.strip(self.words_strip)
-                    if word not in self.words_not_lower:
-                        word = word.lower()
-                    if word in words:
-                        words[word] += 1
-                    else:
-                        words[word] = 1
+            if 'content' not in message:
+                continue
+            msg : str = message['content']
+            for word in msg.split():
+                word = word.strip(self.words_strip)
+                if len(word) == 0:
+                    continue
+                if word not in self.words_not_lower:
+                    word = word.lower()
+                if word in words:
+                    words[word] += 1
+                else:
+                    words[word] = 1
         top_words = {word_key: count for word_key, count in sorted(words.items(),
                            key=lambda kv: (-kv[1], kv[0]))[:nbr]}
         return top_words
@@ -491,20 +502,23 @@ class FacebookMessengerConversation():
         for p in self.p:
             words_p[p] = {}
         for message in self.data['messages']:
-            if 'content' in message:
-                try:
-                    msg : str = message['content']
-                    sender = message['sender_name']
-                    for word in msg.split():
-                        word = word.strip(self.words_strip)
-                        if word not in self.words_not_lower:
-                            word = word.lower()
-                        if word in words_p[sender]:
-                            words_p[sender][word] += 1
-                        else:
-                            words_p[sender][word] = 1
-                except KeyError:
-                    pass
+            if 'content' not in message:
+                continue
+            try:
+                msg : str = message['content']
+                sender = message['sender_name']
+                for word in msg.split():
+                    word = word.strip(self.words_strip)
+                    if len(word) == 0:
+                        continue
+                    if word not in self.words_not_lower:
+                        word = word.lower()
+                    if word in words_p[sender]:
+                        words_p[sender][word] += 1
+                    else:
+                        words_p[sender][word] = 1
+            except KeyError:
+                pass
                 
         top_words_p = {p: {word_key: count for word_key, count in sorted(words_p[p].items(),
                            key=lambda kv: (-kv[1], kv[0]))[:nbr]} for p in self.p}
@@ -545,3 +559,36 @@ class FacebookMessengerConversation():
         if len(self.p) > nbr:
             top_participants_in_characters['Rest'] = sum(nbr_characters_p.values()) - sum(top_participants_in_characters.values())
         return top_participants_in_characters
+    
+    def get_nbr_editions_p(self):
+        """Returns the number of edited messages per participant.
+
+        Returns:
+            dict: Contains the number of edited messages per participant.
+
+        """
+        nbr_of_editions_p = {p: 0 for p in self.p}
+        for message in self.data['messages']:
+            if 'content' in message and message['content'].endswith(' (edited)'):
+                sender = message['sender_name']
+                nbr_of_editions_p[sender] += 1
+        nbr_of_editions_p = dict(sorted(nbr_of_editions_p.items(), key=lambda item: item[1], reverse=True))
+        return nbr_of_editions_p
+    
+    def top_participants_in_editions(self, nbr):
+        """Returns the top `nbr` participants who edited the most messages, last is rest
+
+        Args:
+            nbr (int): The number of participants to include in top list.
+
+        Returns:
+            Dict showing the top participants who edited the most messages with their counts
+
+        """
+        nbr_of_editions_p = self.get_nbr_editions_p()
+
+        top_participants_in_editions = {p: nbr_of_editions_p[p] for p in list(nbr_of_editions_p)[:nbr]}
+
+        if len(self.p) > nbr:
+            top_participants_in_editions['Rest'] = sum(nbr_of_editions_p.values()) - sum(top_participants_in_editions.values())
+        return top_participants_in_editions
