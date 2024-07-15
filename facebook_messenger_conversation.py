@@ -82,7 +82,7 @@ class FacebookMessengerConversation():
                         'raw_unicode_escape').decode('utf-8')
                     reaction['reaction'] = self.interpret_emojis(reaction['reaction'])
                     
-        p = []
+        p = [p['name'] for p in data['participants']]
         for message in data['messages']:
             if 'sender_name' in message:
                 if message['sender_name'] not in p and len(message['sender_name']) > 0:
