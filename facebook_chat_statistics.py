@@ -41,6 +41,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
         print('Start: {}\nEnd: {}'.format(self.time_start, self.time_end))
         print('Number of days: {}'.format(self.nbr_days))
         print('Number of days active: {} ({:.3} %)'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days))
+        print('Number of days active in row: {} ({} : {})'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str))
         print('Most messages in one day: {}'.format(max(self.nbr_times_day)))
 
         print(banner('Messages'))
@@ -325,6 +326,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
                 'End: {}'.format(self.time_end_str),
                 'Number of days: {}'.format(self.nbr_days),
                 'Number of days active: {} ({:.3} %)'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days),
+                'Number of days active in row: {} ({} : {})'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str),
                 'Most messages in one day: {}'.format(max(self.nbr_times_day)),
                 'Number of messages: {}'.format(self.nbr_msg),
                 'Number of words: {}'.format(self.nbr_words),
@@ -410,6 +412,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             txt.write('Start: {}\nEnd: {}\n'.format(self.time_start_str, self.time_end_str))
             txt.write('Number of days: {}\n'.format(self.nbr_days))
             txt.write('Number of days active: {} ({:.3} %)\n'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days))
+            txt.write('Number of days active in row: {} ({} : {})'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str))
             txt.write('Most messages in one day: {}\n'.format(max(self.nbr_times_day)))
 
             txt.write(banner('Messages') + '\n')

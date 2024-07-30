@@ -169,6 +169,24 @@ class FacebookMessengerConversation():
             days.add(current)
         self.nbr_days_active = len(days)
 
+        self.nbr_days_active_in_row = 1
+        prev_date = datetime.fromtimestamp(self.data['messages'][-1]['timestamp_ms']/1000).date()
+        self.time_start_days_active_in_row_str = prev_date.strftime('%Y-%m-%d')
+        self.time_end_days_active_in_row_str = prev_date.strftime('%Y-%m-%d')
+        temp_days = 1
+        # loop begin from newest message to oldest
+        for message in reversed(self.data['messages']):
+            current = datetime.fromtimestamp(message['timestamp_ms']/1000).date()
+            if prev_date == current - timedelta(days=1):
+                temp_days += 1
+            elif prev_date < current - timedelta(days=1):
+                if temp_days > self.nbr_days_active_in_row:
+                    self.nbr_days_active_in_row = temp_days
+                    self.time_start_days_active_in_row_str = (prev_date - timedelta(days=temp_days-1)).strftime('%Y-%m-%d')
+                    self.time_end_days_active_in_row_str = prev_date.strftime('%Y-%m-%d')
+                temp_days = 1
+            prev_date = current
+
     def __messages(self):
         self.nbr_msg = len(self.data['messages'])
 
