@@ -59,6 +59,11 @@ class FacebookMessengerConversation():
         self.__edits()
         self.__top()
 
+        self.timeline, self.nbr_times_day, self.nbr_times_weekday, self.nbr_times_hour = self.get_timeline()
+
+        self.top_emojis, self.emojis_all_count = self.get_top_emojis(self.nbr_top_emojis)
+        self.top_reactions_emojis, self.emojis_reactions_all_count = self.get_top_reactions_emojis(self.nbr_top_emojis)
+
 
     def read_conversation(self, conversation):
         """ Reads a conversation from a JSON file and returns the data and participants.
@@ -381,12 +386,14 @@ class FacebookMessengerConversation():
         """Creates dict of words used in messages and sorts them by count
         """
         words = {}
+        emojis = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
         for message in self.data['messages']:
             if 'content' not in message:
                 continue
             msg : str = message['content']
             for word in msg.split():
                 word = word.strip(self.words_strip)
+                word = ''.join([c for c in word if emoji.demojize(c) not in emojis])
                 if len(word) == 0:
                     continue
                 if word not in self.words_not_lower:
@@ -402,6 +409,7 @@ class FacebookMessengerConversation():
         """Creates dict of words used by participants in messages and sorts them by count
         """
         words_p = {p: {} for p in self.p}
+        emojis = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
         for p in self.p:
             words_p[p] = {}
         for message in self.data['messages']:
@@ -412,6 +420,7 @@ class FacebookMessengerConversation():
                 sender = message['sender_name']
                 for word in msg.split():
                     word = word.strip(self.words_strip)
+                    word = ''.join([c for c in word if emoji.demojize(c) not in emojis])
                     if len(word) == 0:
                         continue
                     if word not in self.words_not_lower:

@@ -20,10 +20,6 @@ class FacebookChatStatistics(FacebookMessengerConversation):
         self.max_participants_on_plots = 10
         self.pdf_fonts = ['Arial', 'Segoe UI Emoji']
 
-        self.timeline, self.nbr_times_day, self.nbr_times_weekday, self.nbr_times_hour = self.get_timeline()
-
-        self.top_emojis, self.emojis_all_count = self.get_top_emojis(self.nbr_top_emojis)
-        self.top_reactions_emojis, self.emojis_reactions_all_count = self.get_top_reactions_emojis(self.nbr_top_emojis)
 
     def run(self, pdf=False, txt=False, user=None):
         if len(self.p) == 0:
