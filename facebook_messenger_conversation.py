@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 import emoji
 import os
 
-
 class FacebookMessengerConversation():
     """Module for getting stats of a Facebook Messenger conversation.
 
@@ -50,6 +49,8 @@ class FacebookMessengerConversation():
 
         self.title = str(self.data['title']).encode('raw_unicode_escape').decode('utf-8')
 
+        all_messages_str = ''.join([msg['content'] for msg in self.data['messages'] if 'content' in msg])
+        self.__emojis_str = ''.join([emoji.emojize(c) for c in emoji.EMOJI_UNICODE.values() if c in all_messages_str]) # All used emojis in string
         self.__time_interval()
         self.__days()
         self.__messages()
@@ -57,14 +58,16 @@ class FacebookMessengerConversation():
         self.__characters()
         self.__averages()
         self.__edits()
-        self.__top()
+        self.__top_chars()
+        self.__top_words()
+        self.__non_content_messages()
 
         self.timeline, self.nbr_times_day, self.nbr_times_weekday, self.nbr_times_hour = self.get_timeline()
 
         self.top_emojis, self.emojis_all_count = self.get_top_emojis(self.nbr_top_emojis)
         self.top_reactions_emojis, self.emojis_reactions_all_count = self.get_top_reactions_emojis(self.nbr_top_emojis)
 
-
+    
     def read_conversation(self, conversation):
         """ Reads a conversation from a JSON file and returns the data and participants.
 
@@ -174,7 +177,6 @@ class FacebookMessengerConversation():
         self.time_start_days_active_in_row_str = prev_date.strftime('%Y-%m-%d')
         self.time_end_days_active_in_row_str = prev_date.strftime('%Y-%m-%d')
         temp_days = 1
-        # loop begin from newest message to oldest
         for message in reversed(self.data['messages']):
             current = datetime.fromtimestamp(message['timestamp_ms']/1000).date()
             if prev_date == current - timedelta(days=1):
@@ -222,8 +224,8 @@ class FacebookMessengerConversation():
             if 'content' in message:
                 try:
                     sender = message['sender_name']
-                    nbr_characters_p[sender] += len(message['content'])
-                    if message['content'].endswith(' (edited)'):
+                    nbr_characters_p[sender] += len(message['content'].replace(' ', ''))
+                    if message['content'].endswith('(edited)'):
                         nbr_characters_p[sender] -= 9
                 except KeyError:
                     pass
@@ -249,10 +251,6 @@ class FacebookMessengerConversation():
         self.nbr_editions_p = dict(sorted(nbr_of_editions_p.items(), key=lambda item: item[1], reverse=True))
         self.nbr_editions = sum(self.nbr_editions_p.values())
 
-    def __top(self):
-        self.__top_chars()
-        self.__top_words()
-        self.__top_words_p()
 
     def get_timeline(self):
         """Fetches data when messages are sent.
@@ -386,32 +384,33 @@ class FacebookMessengerConversation():
         all_emojis_count_sorted = dict(sorted(all_emojis_count.items(), key=lambda item: item[1], reverse=True))
 
         return top_emojis, all_emojis_count_sorted
-    
+  
     def __top_chars(self):
         """Creates dict of characters used in messages and sorts them by count
         """
-        characters = {c: 0 for c in set(''.join([message['content'].lower() for message in self.data['messages'] if 'content' in message]))}
+        characters = {c: 0 for c in set(''.join([message['content'].lower() for message in self.data['messages'] if 'content' in message])) if c not in self.__emojis_str}
+        if ' ' in characters: 
+            characters.pop(' ')
         for message in self.data['messages']:
             if 'content' in message:
-                msg = message['content'].lower()
+                msg : str = message['content'].lower()
                 for c in msg:
-                    if c != ' ':
+                    if c in characters:
                         characters[c] += 1
         self.top_chars = {character_key: count for character_key, count in sorted(characters.items(),
                            key=lambda kv: (-kv[1], kv[0]))}
     
-    def __top_words(self):
+
+    def __top_words_deprecated(self):
         """Creates dict of words used in messages and sorts them by count
         """
         words = {}
-        emojis = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
         for message in self.data['messages']:
             if 'content' not in message:
                 continue
             msg : str = message['content']
             for word in msg.split():
-                word = word.strip(self.words_strip)
-                word = ''.join([c for c in word if emoji.demojize(c) not in emojis])
+                word = word.strip(self.__emojis_str + self.words_strip)
                 if len(word) == 0:
                     continue
                 if word not in self.words_not_lower:
@@ -422,14 +421,12 @@ class FacebookMessengerConversation():
                     words[word] = 1
         self.top_words = {word_key: count for word_key, count in sorted(words.items(),
                            key=lambda kv: (-kv[1], kv[0]))}
-    
-    def __top_words_p(self):
+   
+    def __top_words(self):
         """Creates dict of words used by participants in messages and sorts them by count
         """
         words_p = {p: {} for p in self.p}
-        emojis = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
-        for p in self.p:
-            words_p[p] = {}
+        words = {}
         for message in self.data['messages']:
             if 'content' not in message:
                 continue
@@ -437,22 +434,25 @@ class FacebookMessengerConversation():
                 msg : str = message['content']
                 sender = message['sender_name']
                 for word in msg.split():
-                    word = word.strip(self.words_strip)
-                    word = ''.join([c for c in word if emoji.demojize(c) not in emojis])
+                    word = word.strip(self.__emojis_str + self.words_strip)
                     if len(word) == 0:
                         continue
                     if word not in self.words_not_lower:
                         word = word.lower()
                     if word in words_p[sender]:
                         words_p[sender][word] += 1
+                        words[word] += 1
                     else:
                         words_p[sender][word] = 1
+                        words[word] = 1
             except KeyError:
                 pass
                 
         self.top_words_p = {p: {word_key: count for word_key, count in sorted(words_p[p].items(),
                            key=lambda kv: (-kv[1], kv[0]))} for p in self.p}
-    
+        self.top_words = {word_key: count for word_key, count in sorted(words.items(),
+                           key=lambda kv: (-kv[1], kv[0]))}
+
     def top_participants_in_messages(self, nbr):
         """Returns the top `nbr` participants who sent the most messages, last is rest
 
@@ -484,7 +484,7 @@ class FacebookMessengerConversation():
         if len(self.p) > nbr:
             top_participants_in_words['Rest'] = self.nbr_words - sum(top_participants_in_words.values())
         return top_participants_in_words
-    
+   
     def top_participants_in_characters(self, nbr):
         """Returns the top `nbr` participants who used the most characters, last is rest
 
@@ -500,7 +500,7 @@ class FacebookMessengerConversation():
         if len(self.p) > nbr:
             top_participants_in_characters['Rest'] = self.nbr_chars - sum(top_participants_in_characters.values())
         return top_participants_in_characters
-    
+   
     def top_participants_in_editions(self, nbr):
         """Returns the top `nbr` participants who edited the most messages, last is rest
 
@@ -517,3 +517,44 @@ class FacebookMessengerConversation():
         if len(self.p) > nbr:
             top_participants_in_editions['Rest'] = self.nbr_editions - sum(top_participants_in_editions.values())
         return top_participants_in_editions
+    
+
+    def __non_content_messages(self):
+        self.nbr_photos_p = {p: 0 for p in self.p}
+        self.nbr_files_p = self.nbr_photos_p.copy()
+        self.nbr_gifs_p = self.nbr_photos_p.copy()
+        self.nbr_videos_p = self.nbr_photos_p.copy()
+        self.nbr_audio_p = self.nbr_photos_p.copy()
+        self.nbr_stickers_p = self.nbr_photos_p.copy()
+        self.nbr_shares_p = self.nbr_photos_p.copy()
+        for message in self.data['messages']:
+            if 'photos' in message:
+                self.nbr_photos_p[message['sender_name']] += 1
+            if 'files' in message:
+                self.nbr_files_p[message['sender_name']] += 1
+            if 'gifs' in message:
+                self.nbr_gifs_p[message['sender_name']] += 1
+            if 'videos' in message:
+                self.nbr_videos_p[message['sender_name']] += 1
+            if 'audio_files' in message:
+                self.nbr_audio_p[message['sender_name']] += 1
+            if 'sticker' in message:
+                self.nbr_stickers_p[message['sender_name']] += 1
+            if 'share' in message:
+                self.nbr_shares_p[message['sender_name']] += 1
+        
+        self.nbr_photos = sum(self.nbr_photos_p.values())
+        self.nbr_files = sum(self.nbr_files_p.values())
+        self.nbr_gifs = sum(self.nbr_gifs_p.values())
+        self.nbr_videos = sum(self.nbr_videos_p.values())
+        self.nbr_audio = sum(self.nbr_audio_p.values())
+        self.nbr_stickers = sum(self.nbr_stickers_p.values())
+        self.nbr_shares = sum(self.nbr_shares_p.values())
+
+        self.nbr_photos_p = dict(sorted(self.nbr_photos_p.items(), key=lambda item: item[1], reverse=True))
+        self.nbr_files_p = dict(sorted(self.nbr_files_p.items(), key=lambda item: item[1], reverse=True))
+        self.nbr_gifs_p = dict(sorted(self.nbr_gifs_p.items(), key=lambda item: item[1], reverse=True))
+        self.nbr_videos_p = dict(sorted(self.nbr_videos_p.items(), key=lambda item: item[1], reverse=True))
+        self.nbr_audio_p = dict(sorted(self.nbr_audio_p.items(), key=lambda item: item[1], reverse=True))
+        self.nbr_stickers_p = dict(sorted(self.nbr_stickers_p.items(), key=lambda item: item[1], reverse=True))
+        self.nbr_shares_p = dict(sorted(self.nbr_shares_p.items(), key=lambda item: item[1], reverse=True))
