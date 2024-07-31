@@ -50,9 +50,19 @@ pip3 install -r /path/to/requirements.txt
 
 2. Run the script as below with the path to your JSON conversation as an argument, for example
 ```
-python3 facebook_chat_statistics.py /Path/To/Conversation.json
+python3 facebook_chat_statistics.py /Path/To/Conversation/message_1.json
 ```
+If there are more files (there is limit 10000 messages in one file) then it automatically reads other files
 
 **NOTE:** The number of top emojis is default set to 10, but can easily be changed to some other integer by changing the line `nbr_of_top_emojis = 10` in `facebook_chat_statistics.py`.
+
+### Run all conversations
+Create txt, pdf and user statistics json
+```
+python3 analize_entire_folder.py /Path/To/Conversation/inbox txt pdf user Your_name
+```
+Generating pdf files take some time, better generating them only for specific conversations using previous script\
+User statistics is json file with specific data for future analysis (maybe) so it has no usefull value for now
+
 
 ### Enjoy!
