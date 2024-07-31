@@ -581,7 +581,7 @@ def main():
         print('{} No participants found in the conversation.'.format(fb.title))
         sys.exit()
     
-    #fb.print_in_terminal()
+    fb.print_in_terminal()
     
     if fb.nbr_msg < 10:
         print(fb.title, ' Not enough messages to generate statistics.')
