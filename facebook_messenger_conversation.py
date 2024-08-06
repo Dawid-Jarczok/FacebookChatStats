@@ -2,6 +2,8 @@ import json
 from datetime import datetime, timedelta
 import emoji
 import os
+import statistics
+import math
 
 class FacebookMessengerConversation():
     """Module for getting stats of a Facebook Messenger conversation.
@@ -13,7 +15,7 @@ class FacebookMessengerConversation():
 
     """
 
-    def __init__(self, conversation, nbr_top_emojis=10, nbr_top_words=10, nbr_top_characters=10):
+    def __init__(self, conversation, nbr_top_emojis=10, nbr_top_words=10, nbr_top_characters=10, max_reply_time_for_avg = 3600*24):
         """Prepares `conversation` and fetches its participants.
 
         Args:
@@ -25,6 +27,7 @@ class FacebookMessengerConversation():
         self.nbr_top_emojis = nbr_top_emojis
         self.nbr_top_words = nbr_top_words
         self.nbr_top_characters = nbr_top_characters
+        self.max_reply_time_for_avg = max_reply_time_for_avg
 
         max_files_number = 10
         self.words_strip = ',.()?!@#$%^&*/_:;/\\"' # Characters to strip from words
@@ -51,6 +54,9 @@ class FacebookMessengerConversation():
 
         all_messages_str = ''.join([msg['content'] for msg in self.data['messages'] if 'content' in msg])
         self.__emojis_str = ''.join([emoji.emojize(c) for c in emoji.EMOJI_UNICODE.values() if c in all_messages_str]) # All used emojis in string
+        self.__used_emojis_list = [emoji.UNICODE_EMOJI[c] for c in emoji.EMOJI_UNICODE.values() if c in all_messages_str] # All used emojis in list
+        all_reactions_emojis_str = ''.join([r['reaction'] for msg in self.data['messages'] if 'reactions' in msg for r in msg['reactions']])
+        self.__used_reaction_emojis_list = [emoji.UNICODE_EMOJI[c] for c in emoji.EMOJI_UNICODE.values() if c in all_reactions_emojis_str] # All used reaction emojis in list
         self.__time_interval()
         self.__days()
         self.__messages()
@@ -61,6 +67,7 @@ class FacebookMessengerConversation():
         self.__top_chars()
         self.__top_words()
         self.__non_content_messages()
+        self.__reply_times()
 
         self.timeline, self.nbr_times_day, self.nbr_times_weekday, self.nbr_times_hour = self.get_timeline()
 
@@ -120,7 +127,7 @@ class FacebookMessengerConversation():
             str: Interpreted word
 
         """
-        unknonw_emojis = {
+        unknown_emojis = {
             '\U000fe32a' : '\U0001f61d', # FACE WITH STUCK-OUT TONGUE AND TIGHTLY-CLOSED EYES
             '\U000fe332' : '\U0001f606', # SMILING FACE WITH OPEN MOUTH AND TIGHTLY-CLOSED EYES
             '\U000fe334' : '\U0001f602', # FACE WITH TEARS OF JOY"
@@ -131,10 +138,11 @@ class FacebookMessengerConversation():
             '\u2661'     : '\U0001f90d', # WHITE HEART SUIT
 
             '\U000fec00' : 'UNKNOWN EMOJI',
+            '\U000fe33e' : 'UNKNOWN EMOJI',
         }
         for c in word:
-            if c in unknonw_emojis:
-                word = word.replace(c, unknonw_emojis[c])
+            if c in unknown_emojis:
+                word = word.replace(c, unknown_emojis[c])
         return word
 
     def join_data(self, data_1, data_2):
@@ -164,18 +172,78 @@ class FacebookMessengerConversation():
         self.time_start_str = self.time_start.strftime('%Y-%m-%d %H:%M:%S')
         self.time_end_str = self.time_end.strftime('%Y-%m-%d %H:%M:%S')
 
+    def __reply_times(self):
+        self.reply_times = []
+        self.reply_times_p = {p: [] for p in self.p}
+        self.self_reply_times_p = {p: [] for p in self.p}
+        for i in range(len(self.data['messages'])):
+            if self.data['messages'][i]['sender_name'] != self.data['messages'][i-1]['sender_name']:
+                self.reply_times.append((self.data['messages'][i-1]['timestamp_ms'] - self.data['messages'][i]['timestamp_ms']) / 1000)
+                self.reply_times_p[self.data['messages'][i-1]['sender_name']].append((self.data['messages'][i-1]['timestamp_ms'] - self.data['messages'][i]['timestamp_ms']) / 1000)
+            else:
+                self.self_reply_times_p[self.data['messages'][i]['sender_name']].append((self.data['messages'][i-1]['timestamp_ms'] - self.data['messages'][i]['timestamp_ms']) / 1000)
+
+        temp_reply_times_p = {p: [] for p in self.p}
+        temp_self_reply_times_p = {p: [] for p in self.p}
+        for p in self.p:
+            self.reply_times_p[p] = [t for t in self.reply_times_p[p] if t >= 0]
+            self.reply_times_p[p].sort(reverse=True)
+            temp_reply_times_p[p] = [t for t in self.reply_times_p[p] if t <= self.max_reply_time_for_avg]
+            self.self_reply_times_p[p] = [t for t in self.self_reply_times_p[p] if t >= 0]
+            self.self_reply_times_p[p].sort(reverse=True)
+            temp_self_reply_times_p[p] = [t for t in self.self_reply_times_p[p] if t <= self.max_reply_time_for_avg]
+
+        self.reply_times = [t for t in self.reply_times if t >= 0]
+        self.reply_times.sort(reverse=True)         
+        temp_reply_times = [t for t in self.reply_times if t <= self.max_reply_time_for_avg]
+
+        self.avg_reply_time_p = {p: statistics.mean(temp_reply_times_p[p]) if len(temp_reply_times_p[p]) != 0 else 0.0 for p in self.p}
+        self.avg_self_reply_time_p = {p: statistics.mean(temp_self_reply_times_p[p]) if len(temp_self_reply_times_p[p]) != 0 else 0.0 for p in self.p}
+        self.avg_reply_time = statistics.mean(temp_reply_times) if len(temp_reply_times) != 0 else 0.0
+
+        self.median_reply_time_p = {p: statistics.median(temp_reply_times_p[p]) if len(temp_reply_times_p[p]) != 0 else 0.0 for p in self.p}
+        self.median_self_reply_time_p = {p: statistics.median(temp_self_reply_times_p[p]) if len(temp_self_reply_times_p[p]) != 0 else 0.0 for p in self.p}
+        self.median_reply_time = statistics.median(temp_reply_times) if len(temp_reply_times) != 0 else 0.0
+
+        for p in temp_reply_times_p:
+            temp_reply_times_p[p] = [truncate(x, 0) for x in temp_reply_times_p[p]]
+        for p in temp_self_reply_times_p:
+            temp_self_reply_times_p[p] = [truncate(x, 0) for x in temp_self_reply_times_p[p]]
+        temp_reply_times = [truncate(x, 0) for x in temp_reply_times]
+
+        self.mode_reply_time_p = {p: statistics.mode(temp_reply_times_p[p]) if len(temp_reply_times_p[p]) != 0 else 0.0 for p in self.p}
+        self.mode_self_reply_time_p = {p: statistics.mode(temp_self_reply_times_p[p]) if len(temp_self_reply_times_p[p]) != 0 else 0.0 for p in self.p}
+        self.mode_reply_time = statistics.mode(temp_reply_times) if len(temp_reply_times) != 0 else 0.0
+
+
     def __days(self):
-        self.nbr_days = (self.time_end - self.time_start).days + 1
+        self.nbr_days = (self.time_end.date() - self.time_start.date()).days + 1
+
         days = set()
-        for message in self.data['messages']:
+        activity_timeline = [0] * self.nbr_days
+        nbr_active_days = 0
+        for message in reversed(self.data['messages']):
             current = datetime.fromtimestamp(message['timestamp_ms']/1000).date()
-            days.add(current)
+            current_day_nbr = (current - self.time_start.date()).days
+            if current not in days:
+                days.add(current)
+                nbr_active_days += 1
+                activity_timeline[current_day_nbr] = nbr_active_days
+        
+        for i in range(self.nbr_days):
+            if activity_timeline[i] == 0:
+                activity_timeline[i] = activity_timeline[i-1]
+
+        self.activity_timeline = [x / (i + 1) for i, x in enumerate(activity_timeline)]
         self.nbr_days_active = len(days)
 
         self.nbr_days_active_in_row = 1
+        self.nbr_days_inactive_in_row = 1
         prev_date = datetime.fromtimestamp(self.data['messages'][-1]['timestamp_ms']/1000).date()
         self.time_start_days_active_in_row_str = prev_date.strftime('%Y-%m-%d')
         self.time_end_days_active_in_row_str = prev_date.strftime('%Y-%m-%d')
+        self.time_start_days_inactive_in_row_str = prev_date.strftime('%Y-%m-%d')
+        self.time_end_days_inactive_in_row_str = prev_date.strftime('%Y-%m-%d')
         temp_days = 1
         for message in reversed(self.data['messages']):
             current = datetime.fromtimestamp(message['timestamp_ms']/1000).date()
@@ -187,19 +255,54 @@ class FacebookMessengerConversation():
                     self.time_start_days_active_in_row_str = (prev_date - timedelta(days=temp_days-1)).strftime('%Y-%m-%d')
                     self.time_end_days_active_in_row_str = prev_date.strftime('%Y-%m-%d')
                 temp_days = 1
+                inactive_days = (current - prev_date).days - 1
+                if inactive_days > self.nbr_days_inactive_in_row:
+                    self.nbr_days_inactive_in_row = inactive_days
+                    self.time_start_days_inactive_in_row_str = (prev_date + timedelta(days=1)).strftime('%Y-%m-%d')
+                    self.time_end_days_inactive_in_row_str = (current - timedelta(days=1)).strftime('%Y-%m-%d')
             prev_date = current
+        
+            
 
     def __messages(self):
         self.nbr_msg = len(self.data['messages'])
+        self.nbr_unsent_msg_p = {p: 0 for p in self.p}
+        self.nbr_msg_in_row_p = {p: {n: 0 for n in range(1, 10)} for p in self.p}
+        for p in self.p:
+            self.nbr_msg_in_row_p[p]['more'] = 0
 
         act = {p: 0 for p in self.p}
+        last_participant = None
+        nbr_msg_in_row = 0
         for message in self.data['messages']:
             try:
                 act[message['sender_name']] += 1
+                if 'is_unsent' in message:
+                    self.nbr_unsent_msg_p[message['sender_name']] += 1
+                if last_participant == None:
+                    last_participant = message['sender_name']
+                    nbr_msg_in_row = 1
+                elif message['sender_name'] == last_participant:
+                    nbr_msg_in_row += 1
+                else:
+                    if self.nbr_msg_in_row_p[last_participant].get(nbr_msg_in_row) == None:
+                        self.nbr_msg_in_row_p[last_participant]['more'] += 1
+                    else:
+                        self.nbr_msg_in_row_p[last_participant][nbr_msg_in_row] += 1
+                    nbr_msg_in_row = 1
+                    last_participant = message['sender_name']
             except KeyError:
                 pass
         
+        if self.nbr_msg_in_row_p[last_participant].get(nbr_msg_in_row) == None:
+            self.nbr_msg_in_row_p[last_participant]['more'] += 1
+        else:
+            self.nbr_msg_in_row_p[last_participant][nbr_msg_in_row] += 1
+
         self.nbr_msg_p = dict(sorted(act.items(), key=lambda item: item[1], reverse=True))
+        self.nbr_unsent_msg_p = dict(sorted(self.nbr_unsent_msg_p.items(), key=lambda item: item[1], reverse=True))
+        self.nbr_unsent_msg = sum(self.nbr_unsent_msg_p.values())
+
 
     def __words(self):
         nbr_words_p = {p: 0 for p in self.p}
@@ -308,10 +411,10 @@ class FacebookMessengerConversation():
 
         """
         all_emojis_count = {p: 0 for p in self.p}
-        emojis = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
+        emojis = {e: 0 for e in self.__used_emojis_list}
         emojis_p = {p: 0 for p in self.p}
         for p in emojis_p:
-            emojis_p[p] = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
+            emojis_p[p] = {e: 0 for e in self.__used_emojis_list}
         for message in self.data['messages']:
             if 'content' in message:
                 try:
@@ -353,10 +456,10 @@ class FacebookMessengerConversation():
 
         """
         all_emojis_count = {p: 0 for p in self.p}
-        emojis = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
+        emojis = {e: 0 for e in self.__used_reaction_emojis_list}
         emojis_p = {p: 0 for p in self.p}
         for p in emojis_p:
-            emojis_p[p] = {e: 0 for e in iter(emoji.UNICODE_EMOJI.values())}
+            emojis_p[p] = {e: 0 for e in self.__used_reaction_emojis_list}
         for message in self.data['messages']:
             if 'reactions' in message:
                 for reaction in message['reactions']:
@@ -557,4 +660,27 @@ class FacebookMessengerConversation():
         self.nbr_videos_p = dict(sorted(self.nbr_videos_p.items(), key=lambda item: item[1], reverse=True))
         self.nbr_audio_p = dict(sorted(self.nbr_audio_p.items(), key=lambda item: item[1], reverse=True))
         self.nbr_stickers_p = dict(sorted(self.nbr_stickers_p.items(), key=lambda item: item[1], reverse=True))
-        self.nbr_shares_p = dict(sorted(self.nbr_shares_p.items(), key=lambda item: item[1], reverse=True))
+        self.nbr_shares_p = dict(sorted(self.nbr_shares_p.items(), key=lambda item: item[1], reverse=True))      
+
+    def __timeline_statistics(self):
+        days = set()
+        activity_timeline = [0] * self.nbr_days
+        nbr_active_days = 0
+        for message in reversed(self.data['messages']):
+            current_date = datetime.fromtimestamp(message['timestamp_ms']/1000).date()
+            current_day_nbr = (current_date - self.time_start.date()).days
+            if current_date not in days:
+                days.add(current_date)
+                nbr_active_days += 1
+                activity_timeline[current_day_nbr] = nbr_active_days
+        
+        for i in range(self.nbr_days):
+            if activity_timeline[i] == 0:
+                activity_timeline[i] = activity_timeline[i-1]
+
+        self.activity_timeline = [x / (i + 1) for i, x in enumerate(activity_timeline)]
+
+
+def truncate(n, decimals=0):
+    multiplier = 10**decimals
+    return math.floor(n * multiplier) / multiplier

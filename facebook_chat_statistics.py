@@ -41,8 +41,9 @@ class FacebookChatStatistics(FacebookMessengerConversation):
         print(banner('Times'))
         print('Start: {}\nEnd: {}'.format(self.time_start, self.time_end))
         print('Number of days: {}'.format(self.nbr_days))
-        print('Number of days active: {} ({:.3} %)'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days))
-        print('Number of days active in row: {} ({} : {})'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str))
+        print('Number of active days: {} ({:.3} %)'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days))
+        print('Number of active days in row: {} ({} : {})'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str))
+        print('Number of inactive days in row: {} ({} : {})'.format(self.nbr_days_inactive_in_row, self.time_start_days_inactive_in_row_str, self.time_end_days_inactive_in_row_str))
         print('Most messages in one day: {}'.format(max(self.nbr_times_day)))
 
         print(banner('Messages'))
@@ -67,31 +68,48 @@ class FacebookChatStatistics(FacebookMessengerConversation):
         print('Average length of messages: {:.1f} words'.format(self.avg_words_per_msg))
         print('Average length of messages: {:.1f} characters'.format(self.avg_chars_per_msg))
         print('Average length of word: {:.1f} characters'.format(self.avg_chars_per_word))
+        print('Average reply time: {:.1f} seconds ({:.0f}h {:.0f}min)'.format(self.avg_reply_time, self.avg_reply_time // 3600, (self.avg_reply_time % 3600) // 60))
+        print('Median reply time: {:.1f} seconds'.format(self.median_reply_time))
+        print('   {: <20} {: >12} {: >12} {: >15} {: >18} {: >18}'.format('Participant', 'Words/msg', 'Chars/msg', 'Chars/word', 'Avg reply time', 'Median reply time'))
         for i, p in enumerate(self.nbr_words_p, 1):
             if len(self.p) > 10 and self.nbr_words_p[p] == 0:
                 continue
-            print('{}. {: <20}: {:.1f} w/msg\t{:.1f} ch/msg\t{:.1f} ch/w'.format(i, p, self.avg_words_per_msg_p[p], self.avg_chars_per_msg_p[p], self.avg_chars_per_word_p[p]))
+            print('{}. {: <20}: {:>5.1f} w/msg{:>8.1f} ch/msg{:>7.1f} ch/w{:>11.0f} s{:>13.0f} s'.format(
+                i, p, self.avg_words_per_msg_p[p], self.avg_chars_per_msg_p[p], self.avg_chars_per_word_p[p], self.avg_reply_time_p[p], self.median_reply_time_p[p]))
 
         print(banner('Edits'))
         print('Number of editions: {}'.format(self.nbr_editions))
-        for i, p in enumerate(self.nbr_editions_p, 1):
-            if len(self.p) > 10 and self.nbr_editions_p[p] == 0:
-                continue
-            print('{}. {: <20}: {}'.format(i, p, self.nbr_editions_p[p]))
+        if self.nbr_editions: print(get_stats(self.nbr_editions_p, self.nbr_editions))
 
-        print(banner('Non-text messages'))
+        print(banner('Unsent messages'))
+        print('Number of unsent messages: {}'.format(self.nbr_unsent_msg))
+        if self.nbr_unsent_msg: print(get_stats(self.nbr_unsent_msg_p, self.nbr_unsent_msg))
+
+        print(banner('Photos'))
         print('Number of photos: {}'.format(self.nbr_photos))
         if self.nbr_photos: print(get_stats(self.nbr_photos_p, self.nbr_photos))
+
+        print(banner('Videos'))
         print('Number of videos: {}'.format(self.nbr_videos))
         if self.nbr_videos: print(get_stats(self.nbr_videos_p, self.nbr_videos))
+
+        print(banner('Gifs'))
         print('Number of gifs: {}'.format(self.nbr_gifs))
         if self.nbr_gifs: print(get_stats(self.nbr_gifs_p, self.nbr_gifs))
+
+        print(banner('Stickers'))
         print('Number of stickers: {}'.format(self.nbr_stickers))
         if self.nbr_stickers: print(get_stats(self.nbr_stickers_p, self.nbr_stickers))
+
+        print(banner('Files'))
         print('Number of files: {}'.format(self.nbr_files))
         if self.nbr_files: print(get_stats(self.nbr_files_p, self.nbr_files))
+
+        print(banner('Audio'))
         print('Number of audio: {}'.format(self.nbr_audio))
         if self.nbr_audio: print(get_stats(self.nbr_audio_p, self.nbr_audio))
+
+        print(banner('Shares'))
         print('Number of shares: {}'.format(self.nbr_shares))
         if self.nbr_shares: print(get_stats(self.nbr_shares_p, self.nbr_shares))
 
@@ -109,7 +127,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
         print('Top {} reactions emojis: {}'.format(self.nbr_top_emojis, list(self.top_reactions_emojis.keys())))
 
     def generate_pdf(self, print_in_terminal=False):
-        pb = ProgressBar(21, prefix = self.title, suffix = 'Complete', length = 50)
+        pb = ProgressBar(27, prefix = self.title, suffix = 'Complete', length = 50)
         if not print_in_terminal: pb.off()
 
         # Set appropriate filename
@@ -129,6 +147,11 @@ class FacebookChatStatistics(FacebookMessengerConversation):
         with PdfPages(os.path.join('results', filename)) as pdf:
             #participants_on_plots = participants[:max_participants_on_plots] + (['Rest'] if len(participants) > max_participants_on_plots else [])
 
+            figsize = {'pie' : (6.4, 4.8), 'bar' : (8.0, 4.8), 'text' : (8.27, 11.69)}
+            plt.rcParams['font.family'] = self.pdf_fonts
+            plt.rcParams['figure.figsize'] = figsize['pie']
+            colors = plt.cm.tab10(np.linspace(0, 1, 10))
+
             # Plot participants messages percentage
             create_pie_chart_with_rest('Messages', self.nbr_msg_p.values(), self.nbr_msg_p.keys(), self.max_participants_on_plots, pdf)
             pb.printProgressBar()
@@ -139,6 +162,11 @@ class FacebookChatStatistics(FacebookMessengerConversation):
 
             # Plot participants characters percentage
             create_pie_chart_with_rest('Characters', self.nbr_chars_p.values(), self.nbr_chars_p.keys(), self.max_participants_on_plots, pdf)
+            pb.printProgressBar()
+
+            # Plot unsent messages
+            if self.nbr_unsent_msg:
+                create_pie_chart_with_rest('Unsent messages', self.nbr_unsent_msg_p.values(), self.nbr_unsent_msg_p.keys(), self.max_participants_on_plots, pdf)
             pb.printProgressBar()
 
             # Plot photos
@@ -184,6 +212,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
                 create_pie_chart_with_rest('Editions', self.nbr_editions_p.values(), self.nbr_editions_p.keys(), self.max_participants_on_plots, pdf)
             pb.printProgressBar()
 
+            plt.rcParams['figure.figsize'] = figsize['bar']
             # Plot timeline
             months = self.nbr_days/30
             interval = int(round(months/12))
@@ -194,6 +223,27 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             plt.bar(self.timeline, self.nbr_times_day, align='center')
             plt.title('Timeline')
             plt.ylabel('Number of messages')
+            ax.yaxis.grid(linestyle='--')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['bottom'].set_linewidth(0.5)
+            ax.spines['left'].set_linewidth(0.5)
+            fig = plt.figure(1)
+            fig.autofmt_xdate()
+            plt.tight_layout()
+            pdf.savefig()
+            plt.close()
+            pb.printProgressBar()
+
+            # Plot activity timeline
+            fmt = mdates.DateFormatter('%Y-%m-%d')
+            ax = plt.axes()
+            ax.xaxis.set_major_formatter(fmt)
+            plt.plot(self.timeline, self.activity_timeline)
+            plt.title('Active days timeline')
+            plt.ylabel('Percentage')
+            plt.ylim(top=1)
+            plt.yticks(plt.yticks()[0], ['{:,.0%}'.format(x) for x in plt.yticks()[0]])
             ax.yaxis.grid(linestyle='--')
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
@@ -232,9 +282,228 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             plt.close()
             pb.printProgressBar()
 
-            colors = plt.cm.tab20(np.linspace(0, 1, 20))
+
+            plt.gca().set_prop_cycle('color', colors)
+
+            # Plot reply times
+            # Plot reply times #2 is better
+            """intervals = [10, 30, 60, 300, 900, 3600, 43200, 86400, 864000]
+            intervals_labels = ['0s-10s', '10s-30s', '30s-1min', '1min-5min', '5min-15min', '15min-1h', '1h-12h', '12h-1day', '>1day']
+            j = 0
+            val = {}
+            x = np.arange(len(intervals))
+            if len(self.p) <= self.max_participants_on_plots:
+                bar_width = 0.8 / len(self.p)  # Calculate the width of each bar
+                for k, p in enumerate(self.p):
+                    j = 0
+                    # Calculate the x values for the current participant
+                    x_offset = k * bar_width - (0.4 - bar_width / 2)
+                    val.update({p : [0 for i in intervals]})
+                    for i in reversed(self.reply_times_p[p]):
+                        if i > intervals[j] and j < len(intervals) - 1:
+                            j += 1
+                        val[p][j] += 1
+                    #plt.bar(x + x_offset, val[p], align='center', width=bar_width, label=p)
+                    plt.plot(x, val[p], label=p)
+                plt.legend(self.p,
+                        loc='upper right',
+                        bbox_to_anchor=(1.15, 1.15))
+            else:
+                val = [0 for i in intervals]
+                for i in reversed(self.reply_times):
+                    if i > intervals[j] and j < len(intervals) - 1:
+                        j += 1
+                    val[j] += 1
+                plt.bar(x, val, align='center', width=0.8)
+
+            plt.xticks(x, intervals_labels, rotation=10)
+            plt.title('Reply times')
+            plt.ylabel('Number of messages')
+            plt.grid(True)
+            plt.tight_layout()
+            pdf.savefig()
+            plt.close()
+            pb.printProgressBar()
+
+            # Plot reply times (participant percentage share)
+            if len(self.p) <= self.max_participants_on_plots:
+                val_sum = [0 for i in intervals]
+                for p in self.p:
+                    for i in range(len(intervals)):
+                        val_sum[i] += val[p][i]
+
+                for k, p in enumerate(self.p):
+                    # Calculate the x values for the current participant
+                    x_offset = k * bar_width - (0.4 - bar_width / 2)
+                    v = [x / val_sum[k] if val_sum[k] != 0 else 0 for k, x in enumerate(val[p])]
+                    #plt.bar(x + x_offset, v, align='center', width=bar_width, label=p)
+                    plt.plot(x, v, label=p)
+
+                plt.legend(self.p, loc='upper right', bbox_to_anchor=(1.15, 1.15))
+                plt.xticks(x, intervals_labels, rotation=10)
+                plt.title('Reply times')
+                plt.ylabel('Percentage of messages')
+                plt.yticks(plt.yticks()[0], ['{:,.0%}'.format(x) for x in plt.yticks()[0]])
+                plt.grid(True)
+                plt.tight_layout()
+                pdf.savefig()
+                plt.close()
+            pb.printProgressBar()"""
+
+
+            # Plot reply times #2
+            intervals = [1.0 * (1.294 ** i) for i in range(45)]
+            def custom_ftm(x, pos):
+                h = x // 3600
+                m = x % 3600 // 60
+                s = x % 3600 % 60
+                if h == 0:
+                    if m == 0:
+                        return '{:2.0f}s'.format(s)
+                    return '{:2.0f}min'.format(x // 60)
+                return '{:2.0f}h'.format(x // 3600)
+            
+            j = 0
+            val = {}
+            x = np.arange(len(intervals))
+            if len(self.p) <= self.max_participants_on_plots:
+                bar_width = 0.8 / len(self.p)  # Calculate the width of each bar
+                for k, p in enumerate(self.p):
+                    j = 0
+                    # Calculate the x values for the current participant
+                    #x_offset = k * bar_width - (0.4 - bar_width / 2)
+                    val.update({p : [0 for i in intervals]})
+                    for i in reversed(self.reply_times_p[p]):
+                        if i > intervals[j] and j < len(intervals) - 1:
+                            j += 1
+                        val[p][j] += 1
+                    #plt.bar(x + x_offset, val[p], align='center', width=bar_width, label=p)
+                    plt.plot(x, val[p], label=p)
+                plt.legend(self.p, loc='upper right', bbox_to_anchor=(1.15, 1.15))
+            else:
+                val = [0 for i in intervals]
+                for i in reversed(self.reply_times):
+                    if i > intervals[j] and j < len(intervals) - 1:
+                        j += 1
+                    val[j] += 1
+                #plt.bar(x, val, align='center', width=0.8)
+                plt.plot(x, val)
+
+            #plt.xticks(x, intervals_labels, rotation=10)
+            plt.xticks([i for i in range(0, len(intervals), 4)], [custom_ftm(i, 0) for i in intervals[::4]])
+            plt.title('Reply times')
+            plt.ylabel('Number of messages')
+            plt.grid(True)
+            plt.tight_layout()
+            pdf.savefig()
+            plt.close()
+            pb.printProgressBar()
+
+            # Plot reply times (participant percentage share)
+            # Not necessary, previous plot is enough
+            """if len(self.p) <= self.max_participants_on_plots and self.nbr_msg > 1000:
+                val_sum = [0 for i in intervals]
+                for p in self.p:
+                    for i in range(len(intervals)):
+                        val_sum[i] += val[p][i]
+
+                for k, p in enumerate(self.p):
+                    # Calculate the x values for the current participant
+                    #x_offset = k * bar_width - (0.4 - bar_width / 2)
+                    v = [x / val_sum[k] if val_sum[k] != 0 else 0 for k, x in enumerate(val[p])]
+                    #plt.bar(x + x_offset, v, align='center', width=bar_width, label=p)
+                    plt.plot(x, v, label=p)
+
+                plt.legend(self.p, loc='upper right', bbox_to_anchor=(1.15, 1.15))
+                #plt.xticks(x, intervals_labels, rotation=10)
+                plt.xticks([i for i in range(0, len(intervals), 4)], [custom_ftm(i, 0) for i in intervals[::4]])
+                plt.title('Reply times')
+                plt.ylabel('Percentage of messages')
+                plt.yticks(plt.yticks()[0], ['{:,.0%}'.format(x) for x in plt.yticks()[0]])
+                plt.grid(True)
+                plt.tight_layout()
+                pdf.savefig()
+                plt.close()"""
+
+
+            # Plot messages per day
+            intervals = [0, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 100000]
+            intervals_labels = ['0', '1-10', '10-25', '25-50', '50-100', '100-250', '250-500', '500-1000', '1000-2500', '2500-5000', '5000-10000', '>10000']
+            j = 0
+            val = [0 for i in intervals]
+            for i in sorted(self.nbr_times_day, reverse=False):
+                if i > intervals[j] and j < len(intervals) - 1:
+                    j += 1
+                val[j] += 1
+
+            while val[-1] == 0:
+                val.pop()
+                intervals_labels.pop()
+            val.pop(0)
+            intervals_labels.pop(0)
+            x = np.arange(len(val))
+            plt.bar(x, val, align='center', width=0.8)
+            plt.xticks(x, intervals_labels, rotation=0)
+            plt.title('Days per number of messages')
+            plt.ylabel('Number of days')
+            plt.xlabel('Number of messages')
+            plt.grid(True)
+            plt.tight_layout()
+            pdf.savefig()
+            plt.close()
+            pb.printProgressBar()
+
+            # Plot number of messages in a row
+            plt.gca().set_prop_cycle('color', colors)
+            if len(self.p) <= self.max_participants_on_plots:
+                intervals_labels = [str(i) for i in self.nbr_msg_in_row_p[self.p[0]].keys()]
+                bar_width = 0.8 / len(self.p)  # Calculate the width of each bar
+                x = np.arange(len(intervals_labels))
+                for k, p in enumerate(self.p):
+                    j = 0
+                    # Calculate the x values for the current participant
+                    x_offset = k * bar_width - (0.4 - bar_width / 2)
+                    plt.bar(x + x_offset, self.nbr_msg_in_row_p[p].values(), align='center', width=bar_width, label=p)
+                plt.legend(self.p,
+                        loc='upper right',
+                        bbox_to_anchor=(1.15, 1.15))
+                plt.xticks(x, intervals_labels, rotation=0)
+                plt.title('Messages in a row')
+                plt.xlabel('Number of messages in a row')
+                plt.ylabel('Count')
+                #plt.yscale('log')
+                plt.grid(True)
+                plt.tight_layout()
+                pdf.savefig()
+                plt.close()
+            pb.printProgressBar()
+
+            # Plot number of messages in a row (participant percentage share)
+            if len(self.p) <= self.max_participants_on_plots:
+                val_sum = [0 for i in self.nbr_msg_in_row_p[p].values()]
+                for p in self.p:
+                    for i, elem in enumerate(self.nbr_msg_in_row_p[p].values()):
+                        val_sum[i] += elem
+
+                for k, p in enumerate(self.p):
+                    # Calculate the x values for the current participant
+                    x_offset = k * bar_width - (0.4 - bar_width / 2)
+                    v = [x / val_sum[k] if val_sum[k] != 0 else 0 for k, x in enumerate(self.nbr_msg_in_row_p[p].values())]
+                    plt.bar(x + x_offset, v, align='center', width=bar_width, label=p)
+
+                plt.legend(self.p, loc='upper right', bbox_to_anchor=(1.15, 1.15))
+                plt.xticks(x, intervals_labels, rotation=10)
+                plt.title('Messages in a row')
+                plt.xlabel('Number of messages in a row')
+                plt.ylabel('Percentage')
+                plt.yticks(plt.yticks()[0], ['{:,.0%}'.format(x) for x in plt.yticks()[0]])
+                plt.grid(True)
+                plt.tight_layout()
+                pdf.savefig()
+                plt.close()
+            pb.printProgressBar()
+
             # Plot top emojis
-            plt.rcParams['font.family'] = self.pdf_fonts
             plt.gca().set_prop_cycle('color', colors)
 
             x = np.arange(len(self.top_emojis))
@@ -266,7 +535,6 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             pb.printProgressBar()
 
             # Plot top reactions emojis
-            plt.rcParams['font.family'] = self.pdf_fonts
             plt.gca().set_prop_cycle('color', colors)
 
             x = np.arange(len(self.top_reactions_emojis))
@@ -297,15 +565,15 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             pdf.savefig()
             plt.close()
             pb.printProgressBar()
-
+            
             # Plot top characters
+            plt.rcParams['figure.figsize'] = figsize['pie']
             create_pie_chart_with_rest('Top {} characters'.format(self.nbr_top_characters), list(self.top_chars.values()), list(self.top_chars.keys()), self.nbr_top_characters, pdf)
             pb.printProgressBar()
             
 
+            plt.rcParams['figure.figsize'] = figsize['text']
             # Text statistics 1
-            plt.rcParams['font.family'] = self.pdf_fonts
-            plt.figure(figsize=(8.27, 11.69))
             plt.title('Text Statistics', fontsize=16, fontweight='bold')
             plt.axis('off')
 
@@ -313,17 +581,23 @@ class FacebookChatStatistics(FacebookMessengerConversation):
                 'Start: {}'.format(self.time_start_str),
                 'End: {}'.format(self.time_end_str),
                 'Number of days: {}'.format(self.nbr_days),
-                'Number of days active: {} ({:.3} %)'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days),
-                'Number of days active in row: {} ({} : {})'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str),
+                'Number of active days: {} ({:.3} %)'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days),
+                'Number of active days in row: {} ({} : {})'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str),
+                'Number of inactive days in row: {} ({} : {})'.format(self.nbr_days_inactive_in_row, self.time_start_days_inactive_in_row_str, self.time_end_days_inactive_in_row_str),
                 'Most messages in one day: {}'.format(max(self.nbr_times_day)),
                 'Number of messages: {}'.format(self.nbr_msg),
                 'Number of words: {}'.format(self.nbr_words),
                 'Number of characters: {}'.format(self.nbr_chars),
                 'Top {} characters: {}'.format(self.nbr_top_characters, list(self.top_chars.keys())[:self.nbr_top_characters]),
+                '',
                 'Average length of messages: {:.1f} words'.format(self.avg_words_per_msg),
                 'Average length of messages: {:.1f} characters'.format(self.avg_chars_per_msg),
                 'Average length of word: {:.1f} characters'.format(self.avg_chars_per_word),
                 'Average messages per day: {:.1f}'.format(self.avg_msg_per_day),
+                'Average reply time: {:.1f} seconds ({:.0f}h {:.0f}min) (rejecting >1day)'.format(self.avg_reply_time, self.avg_reply_time // 3600, (self.avg_reply_time % 3600) // 60),
+                'Median reply time: {:.1f} seconds'.format(self.median_reply_time),
+                '',
+                'Number of unsent messages: {}'.format(self.nbr_unsent_msg),
                 'Number of editions: {}'.format(self.nbr_editions),
                 'Number of photos: {}'.format(self.nbr_photos),
                 'Number of videos: {}'.format(self.nbr_videos),
@@ -344,15 +618,16 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             pb.printProgressBar()
 
             # Text statistics 2
-            plt.rcParams['font.family'] = self.pdf_fonts
-            plt.figure(figsize=(8.27, 11.69))
             plt.axis('off')
             text_stats = []
             # Participants averages
+            text_stats.append('   {: <20} {: >12} {: >12} {: >15} {: >18} {: >18}'.format('Participant', 'Words/msg', 'Chars/msg', 'Chars/word', 'Avg reply time', 'Median reply time'))
             for i, p in enumerate(list(self.nbr_msg_p.keys())[:self.max_participants_on_plots], 1):
-                text_stats.append('{}. {: <25}: {:2.1f} w/msg   {:2.1f} ch/msg   {:2.1f} ch/w'.format(i, p, self.avg_words_per_msg_p[p], self.avg_chars_per_msg_p[p], self.avg_chars_per_word_p[p]))
+                text_stats.append('{}. {: <20}: {:>5.1f} w/msg{:>8.1f} ch/msg{:>7.1f} ch/w{:>11.0f} s{:>13.0f} s'.format(
+                    i, p, self.avg_words_per_msg_p[p], self.avg_chars_per_msg_p[p], self.avg_chars_per_word_p[p], self.avg_reply_time_p[p], self.median_reply_time_p[p]))
             
             # Emojis
+            text_stats.append('')
             text_stats.append(f'Top {self.nbr_top_emojis} emojis: {list(self.top_emojis.keys())}')
             text_stats.append('')
             for i, p in enumerate(self.emojis_all_count, 1):
@@ -365,6 +640,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             # Reactions emojis
             text_stats.append('')
             text_stats.append(f'Top {self.nbr_top_emojis} reactions emojis: {list(self.top_reactions_emojis.keys())}')
+            text_stats.append('')
             for i, p in enumerate(self.emojis_reactions_all_count, 1):
                 if i > self.max_participants_on_plots:
                     break
@@ -383,8 +659,6 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             pb.printProgressBar()
 
             # Top words
-            plt.rcParams['font.family'] = self.pdf_fonts
-            plt.figure(figsize=(8.27, 11.69))
             plt.title('Top words', fontsize=16, fontweight='bold')
             plt.axis('off')
 
@@ -421,8 +695,9 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             txt.write(banner('Times') + '\n')
             txt.write('Start: {}\nEnd: {}\n'.format(self.time_start_str, self.time_end_str))
             txt.write('Number of days: {}\n'.format(self.nbr_days))
-            txt.write('Number of days active: {} ({:.3} %)\n'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days))
-            txt.write('Number of days active in row: {} ({} : {})\n'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str))
+            txt.write('Number of active days: {} ({:.3} %)\n'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days))
+            txt.write('Number of active days in row: {} ({} : {})\n'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str))
+            txt.write('Number of inactive days in row: {} ({} : {})\n'.format(self.nbr_days_inactive_in_row, self.time_start_days_inactive_in_row_str, self.time_end_days_inactive_in_row_str))
             txt.write('Most messages in one day: {}\n'.format(max(self.nbr_times_day)))
 
             txt.write(banner('Messages') + '\n')
@@ -443,14 +718,22 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             txt.write('Average length of messages: {:.1f} words\n'.format(self.avg_words_per_msg))
             txt.write('Average length of messages: {:.1f} characters\n'.format(self.avg_chars_per_msg))
             txt.write('Average length of word: {:.1f} characters\n'.format(self.avg_chars_per_word))
+            txt.write('Average reply time: {:.1f} seconds ({:.0f}h {:.0f}min) (rejecting >1day)'.format(self.avg_reply_time, self.avg_reply_time // 3600, (self.avg_reply_time % 3600) // 60))
+            txt.write('Median reply time: {:.1f} seconds\n'.format(self.median_reply_time))
+            txt.write('   {: <20} {: >12} {: >12} {: >15} {: >18} {: >18}\n'.format('Participant', 'Words/msg', 'Chars/msg', 'Chars/word', 'Avg reply time', 'Median reply time'))
             for i, p in enumerate(self.nbr_words_p, 1):
-                txt.write('{: >3}. {: <25}: {:.1f} w/msg\t{:.1f} ch/msg\t{:.1f} ch/w\n'.format(i, p, self.avg_words_per_msg_p[p], self.avg_chars_per_msg_p[p], self.avg_chars_per_word_p[p]))
-
+                txt.write('{}. {: <20}: {:>5.1f} w/msg{:>8.1f} ch/msg{:>7.1f} ch/w{:>11.0f} s{:>13.0f} s\n'.format(
+                    i, p, self.avg_words_per_msg_p[p], self.avg_chars_per_msg_p[p], self.avg_chars_per_word_p[p], self.avg_reply_time_p[p], self.median_reply_time_p[p]))
+            
             txt.write(banner('Edits') + '\n')
             txt.write('Number of editions: {}\n'.format(self.nbr_editions))
             #txt.write(get_stats(self.nbr_editions_p, self.nbr_editions) + '\n')
 
-            txt.write(banner('Non-text messages') + '\n')
+            txt.write(banner('Unsent messages') + '\n')
+            txt.write('Number of unsent messages: {}\n'.format(self.nbr_unsent_msg))
+            if self.nbr_unsent_msg: txt.write(get_stats(self.nbr_unsent_msg_p, self.nbr_unsent_msg) + '\n')
+
+            txt.write(banner('Others') + '\n')
             txt.write('Number of photos: {}\n'.format(self.nbr_photos))
             if self.nbr_photos: txt.write(get_stats(self.nbr_photos_p, self.nbr_photos) + '\n')
             txt.write('Number of videos: {}\n'.format(self.nbr_videos))
@@ -629,10 +912,13 @@ def get_stats(nbr_p : dict, nbr_all : int, max_p : int = 10) -> str:
     output = output[:-1]
     return output
 
-#@timeit
+
 def create_pie_chart(title : str, fracs : list, legend : list, pdf_file):
     # Set a wider range of colors for the color cycle
-    colors = plt.cm.tab20(np.linspace(0, 1, 20))
+    if len(fracs) > 10:
+        colors = plt.cm.tab20(np.linspace(0, 1, 20))
+    else:
+        colors = plt.cm.tab10(np.linspace(0, 1, 10))
     plt.gca().set_prop_cycle('color', colors)
     plt.pie(fracs, startangle=90, autopct='%1.1f%%', pctdistance=0.75)
     plt.legend(legend,
@@ -655,8 +941,9 @@ def create_pie_chart_with_rest(title : str, fracs, legend, max_on_plot : int, pd
         rest_val = sum(fracs) - sum(fracs[:max_on_plot])
         fracs = fracs[:max_on_plot]
         legend = legend[:max_on_plot]
-        fracs.append(rest_val)
-        legend.append('Rest')
+        if rest_val != 0:
+            fracs.append(rest_val)
+            legend.append('Rest')
     create_pie_chart(title, fracs, legend, pdf_file)
 
 if __name__ == '__main__':
