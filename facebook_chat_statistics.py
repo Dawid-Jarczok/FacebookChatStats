@@ -718,7 +718,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             txt.write('Average length of messages: {:.1f} words\n'.format(self.avg_words_per_msg))
             txt.write('Average length of messages: {:.1f} characters\n'.format(self.avg_chars_per_msg))
             txt.write('Average length of word: {:.1f} characters\n'.format(self.avg_chars_per_word))
-            txt.write('Average reply time: {:.1f} seconds ({:.0f}h {:.0f}min) (rejecting >1day)'.format(self.avg_reply_time, self.avg_reply_time // 3600, (self.avg_reply_time % 3600) // 60))
+            txt.write('Average reply time: {:.1f} seconds ({:.0f}h {:.0f}min) (rejecting >1day)\n'.format(self.avg_reply_time, self.avg_reply_time // 3600, (self.avg_reply_time % 3600) // 60))
             txt.write('Median reply time: {:.1f} seconds\n'.format(self.median_reply_time))
             txt.write('   {: <20} {: >12} {: >12} {: >15} {: >18} {: >18}\n'.format('Participant', 'Words/msg', 'Chars/msg', 'Chars/word', 'Avg reply time', 'Median reply time'))
             for i, p in enumerate(self.nbr_words_p, 1):
@@ -874,6 +874,8 @@ def main():
     fb.generate_txt(True)
     if user != None:
         fb.update_user_statistics(user)
+
+    fb.create_conversation_txt()
     
     time_end = time.time()
     print('\nExecution time: {:.2f} seconds'.format(time_end - time_start))
