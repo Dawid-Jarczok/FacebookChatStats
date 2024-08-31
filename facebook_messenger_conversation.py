@@ -542,12 +542,12 @@ class FacebookMessengerConversation():
                         continue
                     if word not in self.words_not_lower:
                         word = word.lower()
-                    if word in words_p[sender]:
-                        words_p[sender][word] += 1
-                        words[word] += 1
-                    else:
-                        words_p[sender][word] = 1
-                        words[word] = 1
+                    if word not in words_p[sender]:
+                        words_p[sender][word] = 0
+                    if word not in words:
+                        words[word] = 0
+                    words_p[sender][word] += 1
+                    words[word] += 1
             except KeyError:
                 pass
                 
@@ -679,6 +679,22 @@ class FacebookMessengerConversation():
                 activity_timeline[i] = activity_timeline[i-1]
 
         self.activity_timeline = [x / (i + 1) for i, x in enumerate(activity_timeline)]
+
+    def create_conversation_txt(self):
+        """Creates a text file with messages from the conversation
+        """
+        filename = self.data['title'] + '_conversation.txt'
+        with open('results/' + filename, 'w', encoding='utf-8') as f:
+            for message in self.data['messages']:
+                time = datetime.fromtimestamp(message['timestamp_ms']/1000).strftime('%Y-%m-%d %H:%M:%S')
+                string = time + ' ' + message['sender_name']
+                if 'content' in message:
+                    string += ': ' + message['content']
+                elif 'photos' in message:
+                    string += ' sent a photo'
+                elif 'files' in message:
+                    string += ' sent a file'
+                f.write(string + '\n')
 
 
 def truncate(n, decimals=0):
