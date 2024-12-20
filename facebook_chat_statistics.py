@@ -803,52 +803,46 @@ class FacebookChatStatistics(FacebookMessengerConversation):
 
         user_statistics = {
             'conversation_type': 'group' if len(self.p) > 2 else 'private',
-            'times': {
-                'start': self.time_start_str,
-                'end': self.time_end_str,
-                'days': self.nbr_days,
-                'active_days': self.nbr_days_active,
-                'most_messages_in_one_day': max(self.nbr_times_day)},
-            'messages': {
-                'all': self.nbr_msg,
-                'user': self.nbr_msg_p[user]},
-            'words': {
-                'all': self.nbr_words,
-                'user': self.nbr_words_p[user],
-                'top': dict(list(self.top_words.items())[:self.nbr_top_words]),
-                'user_top': dict(list(self.top_words_p[user].items())[:self.nbr_top_words])},
-            'characters': {
-                'all': self.nbr_chars,
-                'user': self.nbr_chars_p[user],
-                'top': dict(list(self.top_chars.items())[:self.nbr_top_characters])},
-            'averages': {
-                'messages_per_day': round(self.avg_msg_per_day, 1),
-                'words_per_message': round(self.avg_words_per_msg, 1),
-                'characters_per_message': round(self.avg_chars_per_msg, 1),
-                'characters_per_word': round(self.avg_chars_per_word, 1)},
-            'edits': {
-                'all': self.nbr_editions,
-                'user': self.nbr_editions_p[user]},
-            'emojis': {
-                'all': sum(self.emojis_all_count.values()),
-                'user': self.emojis_all_count[user],
-                'top': top_emojis_with_count},
-            'reactions_emojis': {
-                'all': sum(self.emojis_reactions_all_count.values()),
-                'user': self.emojis_reactions_all_count[user],
-                'top': top_emojis_reactions_with_count},
-            'photos': {
-                'all': self.nbr_photos,
-                'user': self.nbr_photos_p[user]}
+            'time start': self.time_start_str,
+            'time_end': self.time_end_str,
+            'days': self.nbr_days,
+            'active_days': self.nbr_days_active,
+            'most_messages_in_one_day': max(self.nbr_times_day),
+            'messages_all': self.nbr_msg,
+            'messages_user': self.nbr_msg_p[user],
+            'words_all': self.nbr_words,
+            'words_user': self.nbr_words_p[user],
+            'words_top': dict(list(self.top_words.items())[:self.nbr_top_words]),
+            'words_user_top': dict(list(self.top_words_p[user].items())[:self.nbr_top_words]),
+            'characters_all': self.nbr_chars,
+            'characters_user': self.nbr_chars_p[user],
+            'characters_top': dict(list(self.top_chars.items())[:self.nbr_top_characters]),
+            'messages_per_day': round(self.avg_msg_per_day, 1),
+            'words_per_message': round(self.avg_words_per_msg, 1),
+            'characters_per_message': round(self.avg_chars_per_msg, 1),
+            'characters_per_word': round(self.avg_chars_per_word, 1),
+            'edits_all': self.nbr_editions,
+            'edits_user': self.nbr_editions_p[user],
+            'emojis_all': sum(self.emojis_all_count.values()),
+            'emojis_user': self.emojis_all_count[user],
+            'emojis_top': top_emojis_with_count,
+            'reactions_emojis_all': sum(self.emojis_reactions_all_count.values()),
+            'reactions_emojis_user': self.emojis_reactions_all_count[user],
+            'reactions_emojis_top': top_emojis_reactions_with_count,
+            'photos_all': self.nbr_photos,
+            'photos_user': self.nbr_photos_p[user],
         }
         if not os.path.isfile(user_statistics_path):
             with open(user_statistics_path, 'w') as json_file:
-                json.dump({'conversations': {}}, json_file, indent=2)
+                json.dump({'user': user, 'conversations': {}}, json_file, indent=2)
         
         data = json.load(open(user_statistics_path))
-        data['conversations'].update({self.title: user_statistics})
-        with open(user_statistics_path, 'w') as json_file:
-            json.dump(data, json_file, indent=2)
+        if data['user'] != user:
+            print('Invalid user')
+        else:
+            data['conversations'].update({self.title: user_statistics})
+            with open(user_statistics_path, 'w') as json_file:
+                json.dump(data, json_file, indent=2)
 
 def main():
     """
