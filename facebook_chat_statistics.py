@@ -44,7 +44,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
         print('Number of active days: {} ({:.3} %)'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days))
         print('Number of active days in row: {} ({} : {})'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str))
         print('Number of inactive days in row: {} ({} : {})'.format(self.nbr_days_inactive_in_row, self.time_start_days_inactive_in_row_str, self.time_end_days_inactive_in_row_str))
-        print('Most messages in one day: {}'.format(max(self.nbr_times_day)))
+        print('Most messages in one day: {} ({})'.format(max(self.nbr_times_day), self.max_nbr_times_day_date))
 
         print(banner('Messages'))
         print('Number of messages: {}'.format(self.nbr_msg))
@@ -584,7 +584,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
                 'Number of active days: {} ({:.3} %)'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days),
                 'Number of active days in row: {} ({} : {})'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str),
                 'Number of inactive days in row: {} ({} : {})'.format(self.nbr_days_inactive_in_row, self.time_start_days_inactive_in_row_str, self.time_end_days_inactive_in_row_str),
-                'Most messages in one day: {}'.format(max(self.nbr_times_day)),
+                'Most messages in one day: {} ({})'.format(max(self.nbr_times_day), self.max_nbr_times_day_date),
                 'Number of messages: {}'.format(self.nbr_msg),
                 'Number of words: {}'.format(self.nbr_words),
                 'Number of characters: {}'.format(self.nbr_chars),
@@ -698,7 +698,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             txt.write('Number of active days: {} ({:.3} %)\n'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days))
             txt.write('Number of active days in row: {} ({} : {})\n'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str))
             txt.write('Number of inactive days in row: {} ({} : {})\n'.format(self.nbr_days_inactive_in_row, self.time_start_days_inactive_in_row_str, self.time_end_days_inactive_in_row_str))
-            txt.write('Most messages in one day: {}\n'.format(max(self.nbr_times_day)))
+            txt.write('Most messages in one day: {} ({})\n'.format(max(self.nbr_times_day), self.max_nbr_times_day_date))
 
             txt.write(banner('Messages') + '\n')
             txt.write('Number of messages: {}\n'.format(self.nbr_msg))
@@ -803,32 +803,43 @@ class FacebookChatStatistics(FacebookMessengerConversation):
 
         user_statistics = {
             'conversation_type': 'group' if len(self.p) > 2 else 'private',
-            'times': {'start': self.time_start_str,
+            'times': {
+                'start': self.time_start_str,
                 'end': self.time_end_str,
                 'days': self.nbr_days,
                 'active_days': self.nbr_days_active,
                 'most_messages_in_one_day': max(self.nbr_times_day)},
-            'messages': {'all': self.nbr_msg,
+            'messages': {
+                'all': self.nbr_msg,
                 'user': self.nbr_msg_p[user]},
-            'words': {'all': self.nbr_words,
+            'words': {
+                'all': self.nbr_words,
                 'user': self.nbr_words_p[user],
                 'top': dict(list(self.top_words.items())[:self.nbr_top_words]),
                 'user_top': dict(list(self.top_words_p[user].items())[:self.nbr_top_words])},
-            'characters': {'all': self.nbr_chars,
+            'characters': {
+                'all': self.nbr_chars,
                 'user': self.nbr_chars_p[user],
                 'top': dict(list(self.top_chars.items())[:self.nbr_top_characters])},
-            'averages': {'messages_per_day': round(self.avg_msg_per_day, 1),
+            'averages': {
+                'messages_per_day': round(self.avg_msg_per_day, 1),
                 'words_per_message': round(self.avg_words_per_msg, 1),
                 'characters_per_message': round(self.avg_chars_per_msg, 1),
                 'characters_per_word': round(self.avg_chars_per_word, 1)},
-            'edits': {'all': self.nbr_editions,
+            'edits': {
+                'all': self.nbr_editions,
                 'user': self.nbr_editions_p[user]},
-            'emojis': {'all': sum(self.emojis_all_count.values()),
+            'emojis': {
+                'all': sum(self.emojis_all_count.values()),
                 'user': self.emojis_all_count[user],
                 'top': top_emojis_with_count},
-            'reactions_emojis': {'all': sum(self.emojis_reactions_all_count.values()),
-                    'user': self.emojis_reactions_all_count[user],
-                    'top': top_emojis_reactions_with_count},
+            'reactions_emojis': {
+                'all': sum(self.emojis_reactions_all_count.values()),
+                'user': self.emojis_reactions_all_count[user],
+                'top': top_emojis_reactions_with_count},
+            'photos': {
+                'all': self.nbr_photos,
+                'user': self.nbr_photos_p[user]}
         }
         if not os.path.isfile(user_statistics_path):
             with open(user_statistics_path, 'w') as json_file:

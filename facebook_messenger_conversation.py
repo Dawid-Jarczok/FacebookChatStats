@@ -4,6 +4,7 @@ import emoji
 import os
 import statistics
 import math
+import numpy as np
 
 class FacebookMessengerConversation():
     """Module for getting stats of a Facebook Messenger conversation.
@@ -70,6 +71,11 @@ class FacebookMessengerConversation():
         self.__reply_times()
 
         self.timeline, self.nbr_times_day, self.nbr_times_weekday, self.nbr_times_hour = self.get_timeline()
+
+        # Checking when max number of days appear
+        max_index = int(np.argmax(self.nbr_times_day))
+        date = datetime.fromtimestamp(self.data['messages'][-1]['timestamp_ms']/1000).date() + timedelta(days=max_index)
+        self.max_nbr_times_day_date = date.strftime('%Y-%m-%d')
 
         self.top_emojis, self.emojis_all_count = self.get_top_emojis(self.nbr_top_emojis)
         self.top_reactions_emojis, self.emojis_reactions_all_count = self.get_top_reactions_emojis(self.nbr_top_emojis)
@@ -261,6 +267,13 @@ class FacebookMessengerConversation():
                     self.time_start_days_inactive_in_row_str = (prev_date + timedelta(days=1)).strftime('%Y-%m-%d')
                     self.time_end_days_inactive_in_row_str = (current - timedelta(days=1)).strftime('%Y-%m-%d')
             prev_date = current
+        
+        # For loop don't count last active days in row so need to check it after loop
+        if temp_days > self.nbr_days_active_in_row:
+            self.nbr_days_active_in_row = temp_days
+            self.time_start_days_active_in_row_str = (prev_date - timedelta(days=temp_days-1)).strftime('%Y-%m-%d')
+            self.time_end_days_active_in_row_str = prev_date.strftime('%Y-%m-%d')
+
         
             
 
