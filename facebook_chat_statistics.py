@@ -803,6 +803,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
 
         user_statistics = {
             'conversation_type': 'group' if len(self.p) > 2 else 'private',
+            'all_participants': self.p,
             'time_start': self.time_start_str,
             'time_end': self.time_end_str,
             'days': self.nbr_days,
