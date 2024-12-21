@@ -32,6 +32,27 @@ def main():
         'photos_user': {},
     }
 
+    all_nbr = {
+        'messages_all': 0,
+        'messages_user': 0,
+        'words_all': 0,
+        'words_user': 0,
+        'edits_user': 0,
+        'photos_all': 0,
+        'photos_user': 0,
+    }
+
+    for title in data['conversations']:
+        conversation = data['conversations'][title]
+        for key in all_nbr.keys():
+            if key in conversation.keys():
+                all_nbr[key] += conversation[key]
+    
+    all_nbr_averages = {
+        'words_per_message_all': all_nbr['words_all'] / all_nbr['messages_all'],
+        'words_per_message_user': all_nbr['words_user'] / all_nbr['messages_user'],
+    }
+    all_nbr.update(all_nbr_averages)
 
     for title in data['conversations']:
         conversation = data['conversations'][title]
@@ -59,7 +80,21 @@ def main():
         if key == 'time_start': continue
         print(f'* {key}')
         for i, (t, e) in enumerate(list(elem.items())[:nbr_of_max_conversations]):
-            print(f'{i+1:>4}. {e:<6} {t}')
+            if key == 'messages_user':
+                percentage = e / conv_data['messages_all'][t] * 100
+                print(f'{i+1:>4}. {e:<6} ({percentage:.1f}%) {t}')
+            elif key == 'photos_user':
+                percentage = e / conv_data['photos_all'][t] * 100
+                print(f'{i+1:>4}. {e:<6} ({percentage:.1f}%) {t}')
+            else:
+                print(f'{i+1:>4}. {e:<6} {t}')
+    
+    print('---- SUM ----')
+    for key, elem in all_nbr.items():
+        if type(elem) == float:
+            print(f'{key}: {elem:.2f}')
+        else:
+            print(f'{key}: {elem}')
 
 if __name__ == '__main__':
     main()
