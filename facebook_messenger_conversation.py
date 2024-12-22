@@ -8,21 +8,24 @@ import numpy as np
 
 class FacebookMessengerConversation():
     """Module for getting stats of a Facebook Messenger conversation.
-
-    Attributes:
-        data (dict): The conversation of interest.
-        title (str) : Title of the conversation.
-        p (list): List of conversation participants.
-
     """
 
-    def __init__(self, conversation, nbr_top_emojis=10, nbr_top_words=10, nbr_top_characters=10, max_reply_time_for_avg = 3600*24):
+    def __init__(self, conversation, nbr_top_emojis=10, nbr_top_words=10, nbr_top_characters=10, max_reply_time_for_avg = 3600*24, min_nbr_msg = 10):
         """Prepares `conversation` and fetches its participants.
 
         Args:
             conversation (json): Conversation downloaded from
                 Facebook (see https://www.facebook.com/help/
                 212802592074644?helpref=uf_permalink)
+            nbr_top_emojis (int): Number of top emojis to include in statistics
+            nbr_top_words (int): Number of top words to include in statistics
+            nbr_top_characters (int): Number of top characters to include in statistics
+            max_reply_time_for_avg (int): Maximum time in seconds to include in average reply time
+            min_nbr_msg (int): Minimum number of messages to include in statistics
+        Returns:
+            int: 0 if conversation has enough data for analysis
+                1 if conversation has no participants
+                2 if conversation has too few messages
 
         """
         self.nbr_top_emojis = nbr_top_emojis
@@ -35,6 +38,12 @@ class FacebookMessengerConversation():
         self.words_not_lower = ['xD', 'XD'] # Words that should not be lowercased
 
         self.data, self.p = self.read_conversation(conversation)
+
+        # Check if conversation has enough data for analysis
+        if len(self.p) == 0:
+            return 1
+        if len(self.data['messages']) < min_nbr_msg:
+            return 2
 
         if "_1.json" in conversation:
             #print("Detected potential multiple files")
@@ -79,6 +88,19 @@ class FacebookMessengerConversation():
 
         self.top_emojis, self.emojis_all_count = self.get_top_emojis(self.nbr_top_emojis)
         self.top_reactions_emojis, self.emojis_reactions_all_count = self.get_top_reactions_emojis(self.nbr_top_emojis)
+
+        # Some other statistics
+        self.nbr_msg_per_nbr_emojis = self.nbr_msg / sum(self.emojis_all_count.values()) if sum(self.emojis_all_count.values()) != 0 else 0
+        self.nbr_msg_per_nbr_emojis_reactions = self.nbr_msg / sum(self.emojis_reactions_all_count.values()) if sum(self.emojis_reactions_all_count.values()) != 0 else 0
+
+        # Number of messages from each participant per number of emojis in participant's messages
+        self.nbr_msg_per_nbr_emojis_p = {p: self.nbr_msg_p[p] / self.emojis_all_count[p] if self.emojis_all_count[p] != 0 else 0 for p in self.p}
+        self.nbr_msg_per_nbr_emojis_p = dict(sorted(self.nbr_msg_per_nbr_emojis_p.items(), key=lambda item: item[1], reverse=False))
+
+        # Number of messages from others per number of reactions for participant
+        self.nbr_msg_per_nbr_emojis_reactions_p = {p: (self.nbr_msg - self.nbr_msg_p[p]) / self.emojis_reactions_all_count[p] if self.emojis_reactions_all_count[p] != 0 else 0 for p in self.p}
+        self.nbr_msg_per_nbr_emojis_reactions_p = dict(sorted(self.nbr_msg_per_nbr_emojis_reactions_p.items(), key=lambda item: item[1], reverse=False))
+        return 0
 
     
     def read_conversation(self, conversation):
@@ -182,7 +204,7 @@ class FacebookMessengerConversation():
         self.reply_times = []
         self.reply_times_p = {p: [] for p in self.p}
         self.self_reply_times_p = {p: [] for p in self.p}
-        for i in range(len(self.data['messages'])):
+        for i in range(1, len(self.data['messages'])):
             if self.data['messages'][i]['sender_name'] != self.data['messages'][i-1]['sender_name']:
                 self.reply_times.append((self.data['messages'][i-1]['timestamp_ms'] - self.data['messages'][i]['timestamp_ms']) / 1000)
                 self.reply_times_p[self.data['messages'][i-1]['sender_name']].append((self.data['messages'][i-1]['timestamp_ms'] - self.data['messages'][i]['timestamp_ms']) / 1000)

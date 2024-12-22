@@ -16,115 +16,49 @@ warnings.filterwarnings('ignore', module='matplotlib')
 
 class FacebookChatStatistics(FacebookMessengerConversation):
 
-    def __init__(self, path_to_conversation):
-        super().__init__(path_to_conversation, 10, 40, 10)
+    def __init__(self, path_to_conversation, using_multiprocessing = False):
+        self.min_nbr_msg = 10   # Minimum number of messages to generate statistics
+        self.p_len = 25
+
+        self.analysis_result = super().__init__(path_to_conversation, 10, 40, 10, min_nbr_msg=self.min_nbr_msg)
         self.max_participants_on_plots = 10
         self.pdf_fonts = ['Arial', 'Segoe UI Emoji']
 
+        self.using_multiprocessing = using_multiprocessing
 
-    def run(self, pdf=False, txt=False, user=None):
-        if len(self.p) == 0:
-            print('{} No participants found in the conversation.'.format(self.title))
+    def run(self, pdf=False, txt=False, user=None, log=False):
+        result = None
+        if self.analysis_result == 1:
+            if log:
+                print('{} No participants found in the conversation.'.format(self.title))
+            else:
+                print('*', end='', flush=True)
             return
-        if self.nbr_msg < 10:
-            print('{} Not enough messages to generate statistics.'.format(self.title))
+        elif self.analysis_result == 2:
+            if log:
+                print('{} Not enough messages to generate statistics.'.format(self.title))
+            else:
+                print('-', end='', flush=True)
             return
         if pdf:
             self.generate_pdf()
         if txt:
             self.generate_txt()
         if user != None:
-            self.update_user_statistics(user)
-        print('{} Succeeded!.'.format(self.title))
+            result = self.update_user_statistics(user)
+
+        if log:
+            print('{} Succeeded!.'.format(self.title))
+        else:
+            print('+', end='', flush=True)
+        
+        return result
+        
 
     def print_in_terminal(self):
-        print(banner('Times'))
-        print('Start: {}\nEnd: {}'.format(self.time_start, self.time_end))
-        print('Number of days: {}'.format(self.nbr_days))
-        print('Number of active days: {} ({:.3} %)'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days))
-        print('Number of active days in row: {} ({} : {})'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str))
-        print('Number of inactive days in row: {} ({} : {})'.format(self.nbr_days_inactive_in_row, self.time_start_days_inactive_in_row_str, self.time_end_days_inactive_in_row_str))
-        print('Most messages in one day: {} ({})'.format(max(self.nbr_times_day), self.max_nbr_times_day_date))
+        text = self.make_text_statistics(True)
+        print(text)
 
-        print(banner('Messages'))
-        print('Number of messages: {}'.format(self.nbr_msg))
-        print(get_stats(self.nbr_msg_p, self.nbr_msg))
-
-        print(banner('Words'))
-        print('Number of words: {}'.format(self.nbr_words))
-        print(get_stats(self.nbr_words_p, self.nbr_words))
-
-        print('Top {} words: {}'.format(min(self.nbr_top_words, 10), list(self.top_words.keys())[:10]))
-        for i, p in enumerate(self.top_words_p, 1):
-            print('{}. {: <20}: {}'.format(i, p, list(self.top_words_p[p].keys())[:10]))
-        
-        print(banner('Characters'))
-        print('Number of characters: {}'.format(self.nbr_chars))
-        print(get_stats(self.nbr_chars_p, self.nbr_chars))
-        print('Top {} characters: {}'.format(self.nbr_top_characters, list(self.top_chars.keys())[:self.nbr_top_characters]))
-
-        print(banner('Averages'))
-        print('Average messages per day: {:.1f}'.format(self.avg_msg_per_day))
-        print('Average length of messages: {:.1f} words'.format(self.avg_words_per_msg))
-        print('Average length of messages: {:.1f} characters'.format(self.avg_chars_per_msg))
-        print('Average length of word: {:.1f} characters'.format(self.avg_chars_per_word))
-        print('Average reply time: {:.1f} seconds ({:.0f}h {:.0f}min)'.format(self.avg_reply_time, self.avg_reply_time // 3600, (self.avg_reply_time % 3600) // 60))
-        print('Median reply time: {:.1f} seconds'.format(self.median_reply_time))
-        print('   {: <20} {: >12} {: >12} {: >15} {: >18} {: >18}'.format('Participant', 'Words/msg', 'Chars/msg', 'Chars/word', 'Avg reply time', 'Median reply time'))
-        for i, p in enumerate(self.nbr_words_p, 1):
-            if len(self.p) > 10 and self.nbr_words_p[p] == 0:
-                continue
-            print('{}. {: <20}: {:>5.1f} w/msg{:>8.1f} ch/msg{:>7.1f} ch/w{:>11.0f} s{:>13.0f} s'.format(
-                i, p, self.avg_words_per_msg_p[p], self.avg_chars_per_msg_p[p], self.avg_chars_per_word_p[p], self.avg_reply_time_p[p], self.median_reply_time_p[p]))
-
-        print(banner('Edits'))
-        print('Number of editions: {}'.format(self.nbr_editions))
-        if self.nbr_editions: print(get_stats(self.nbr_editions_p, self.nbr_editions))
-
-        print(banner('Unsent messages'))
-        print('Number of unsent messages: {}'.format(self.nbr_unsent_msg))
-        if self.nbr_unsent_msg: print(get_stats(self.nbr_unsent_msg_p, self.nbr_unsent_msg))
-
-        print(banner('Photos'))
-        print('Number of photos: {}'.format(self.nbr_photos))
-        if self.nbr_photos: print(get_stats(self.nbr_photos_p, self.nbr_photos))
-
-        print(banner('Videos'))
-        print('Number of videos: {}'.format(self.nbr_videos))
-        if self.nbr_videos: print(get_stats(self.nbr_videos_p, self.nbr_videos))
-
-        print(banner('Gifs'))
-        print('Number of gifs: {}'.format(self.nbr_gifs))
-        if self.nbr_gifs: print(get_stats(self.nbr_gifs_p, self.nbr_gifs))
-
-        print(banner('Stickers'))
-        print('Number of stickers: {}'.format(self.nbr_stickers))
-        if self.nbr_stickers: print(get_stats(self.nbr_stickers_p, self.nbr_stickers))
-
-        print(banner('Files'))
-        print('Number of files: {}'.format(self.nbr_files))
-        if self.nbr_files: print(get_stats(self.nbr_files_p, self.nbr_files))
-
-        print(banner('Audio'))
-        print('Number of audio: {}'.format(self.nbr_audio))
-        if self.nbr_audio: print(get_stats(self.nbr_audio_p, self.nbr_audio))
-
-        print(banner('Shares'))
-        print('Number of shares: {}'.format(self.nbr_shares))
-        if self.nbr_shares: print(get_stats(self.nbr_shares_p, self.nbr_shares))
-
-
-        # Emojis
-        print(banner('Emojis'))
-        print('Number of emojis: {}'.format(sum(self.emojis_all_count.values())))
-        print(get_stats(self.emojis_all_count, sum(self.emojis_all_count.values())))
-        print('Top {} emojis: {}'.format(self.nbr_top_emojis, list(self.top_emojis.keys())))
-
-        # Reactions emojis
-        print(banner('Reactions emojis'))
-        print('Number of reactions emojis: {}'.format(sum(self.emojis_reactions_all_count.values())))
-        print(get_stats(self.emojis_reactions_all_count, sum(self.emojis_reactions_all_count.values())))
-        print('Top {} reactions emojis: {}'.format(self.nbr_top_emojis, list(self.top_reactions_emojis.keys())))
 
     def generate_pdf(self, print_in_terminal=False):
         pb = ProgressBar(27, prefix = self.title, suffix = 'Complete', length = 50)
@@ -597,6 +531,9 @@ class FacebookChatStatistics(FacebookMessengerConversation):
                 'Average reply time: {:.1f} seconds ({:.0f}h {:.0f}min) (rejecting >1day)'.format(self.avg_reply_time, self.avg_reply_time // 3600, (self.avg_reply_time % 3600) // 60),
                 'Median reply time: {:.1f} seconds'.format(self.median_reply_time),
                 '',
+                'Number of messages per emoji: {:.1f}'.format(self.nbr_msg_per_nbr_emojis),
+                'Number of messages per reaction: {:.1f}'.format(self.nbr_msg_per_nbr_emojis_reactions),
+                '',
                 'Number of unsent messages: {}'.format(self.nbr_unsent_msg),
                 'Number of editions: {}'.format(self.nbr_editions),
                 'Number of photos: {}'.format(self.nbr_photos),
@@ -686,112 +623,134 @@ class FacebookChatStatistics(FacebookMessengerConversation):
 
         pb.printProgressBar()
         if print_in_terminal: print('\nPDF \'{}\' generated successfully!'.format(filename))
+
+    def make_text_statistics(self, for_terminal=False):
+        text = ''
+        text += '\n' + banner('Times') + '\n'
+        text += 'Start: {}\nEnd: {}\n'.format(self.time_start_str, self.time_end_str)
+        text += 'Number of days: {}\n'.format(self.nbr_days)
+        text += 'Number of active days: {} ({:.3} %)\n'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days)
+        text += 'Number of active days in row: {} ({} : {})\n'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str)
+        text += 'Number of inactive days in row: {} ({} : {})\n'.format(self.nbr_days_inactive_in_row, self.time_start_days_inactive_in_row_str, self.time_end_days_inactive_in_row_str)
+        text += 'Most messages in one day: {} ({})\n'.format(max(self.nbr_times_day), self.max_nbr_times_day_date)
+
+        text += '\n' + banner('Messages') + '\n'
+        text += 'Number of messages: {}\n'.format(self.nbr_msg)
+        text += get_stats(self.nbr_msg_p, self.nbr_msg, p_len=self.p_len) + '\n'
+
+        text += '\n' + banner('Words') + '\n'
+        text += 'Number of words: {}\n'.format(self.nbr_words)
+        text += get_stats(self.nbr_words_p, self.nbr_words, p_len=self.p_len) + '\n'
+
+        text += '\n' + banner('Characters') + '\n'
+        text += 'Number of characters: {}\n'.format(self.nbr_chars)
+        text += 'Top {} characters: {}\n'.format(self.nbr_top_characters, list(self.top_chars.keys())[:self.nbr_top_characters])
+        text += get_stats(self.nbr_chars_p, self.nbr_chars, p_len=self.p_len) + '\n'
+
+        text += '\n' + banner('Activity') + '\n'
+        text += 'Average messages per day: {:.1f}\n'.format(self.avg_msg_per_day)
+        text += 'Average length of messages: {:.1f} words\n'.format(self.avg_words_per_msg)
+        text += 'Average length of messages: {:.1f} characters\n'.format(self.avg_chars_per_msg)
+        text += 'Average length of word: {:.1f} characters\n'.format(self.avg_chars_per_word)
+        text += 'Average reply time: {:.1f} seconds ({:.0f}h {:.0f}min) (rejecting >1day)\n'.format(self.avg_reply_time, self.avg_reply_time // 3600, (self.avg_reply_time % 3600) // 60)
+        text += 'Median reply time: {:.1f} seconds\n'.format(self.median_reply_time)
+        text += 'Number of messages per emoji: {:.1f} msg/e\n'.format(self.nbr_msg_per_nbr_emojis)
+        text += 'Number of messages per reaction: {:.1f} msg/r\n'.format(self.nbr_msg_per_nbr_emojis_reactions)
+
+        text += '\n'
+        text += 'msg/e - Number of messages (from participant) per emoji per participant\n'
+        text += 'msg/r Number of messages (from others) per reaction per participant\n'
+
+        text += '     {} {: >11} {: >14} {: >14} {: >15} {: >18} {: >12} {: >16}\n'.format('Participant'.ljust(self.p_len), 'Words/msg', 'Chars/msg', 'Chars/word', 'Avg reply time', 'Median reply time', 'Msg/emoji', 'Msg/reaction')
+        for i, p in enumerate(self.nbr_words_p, 1):
+            text += '{} {} {:>5.1f} w/msg{:>8.1f} ch/msg{:>7.1f} ch/w{:>13.0f} s{:>13.0f} s{:>15.1f} msg/e{:>11.1f} msg/r\n'.format(
+                f'{i}.'.ljust(4), f'{p}:'.ljust(self.p_len), self.avg_words_per_msg_p[p], self.avg_chars_per_msg_p[p], self.avg_chars_per_word_p[p], self.avg_reply_time_p[p], self.median_reply_time_p[p], self.nbr_msg_per_nbr_emojis_p[p], self.nbr_msg_per_nbr_emojis_reactions_p[p])
+        
+        text += '\n' + banner('Edits') + '\n'
+        text += 'Number of editions: {}\n'.format(self.nbr_editions)
+        #text += get_stats(self.nbr_editions_p, self.nbr_editions) + '\n'
+
+        text += '\n' + banner('Unsent messages') + '\n'
+        text += 'Number of unsent messages: {}\n'.format(self.nbr_unsent_msg)
+        if self.nbr_unsent_msg: text += get_stats(self.nbr_unsent_msg_p, self.nbr_unsent_msg, p_len=self.p_len) + '\n'
+
+        text += '\n' + banner('Others') + '\n'
+        text += 'Number of photos: {}\n'.format(self.nbr_photos)
+        if self.nbr_photos: text += get_stats(self.nbr_photos_p, self.nbr_photos, p_len=self.p_len) + '\n'
+        text += 'Number of videos: {}\n'.format(self.nbr_videos)
+        if self.nbr_videos: text += get_stats(self.nbr_videos_p, self.nbr_videos, p_len=self.p_len) + '\n'
+        text += 'Number of gifs: {}\n'.format(self.nbr_gifs)
+        if self.nbr_gifs: text += get_stats(self.nbr_gifs_p, self.nbr_gifs, p_len=self.p_len) + '\n'
+        text += 'Number of stickers: {}\n'.format(self.nbr_stickers)
+        if self.nbr_stickers: text += get_stats(self.nbr_stickers_p, self.nbr_stickers, p_len=self.p_len) + '\n'
+        text += 'Number of files: {}\n'.format(self.nbr_files)
+        if self.nbr_files: text += get_stats(self.nbr_files_p, self.nbr_files, p_len=self.p_len) + '\n'
+        text += 'Number of audio: {}\n'.format(self.nbr_audio)
+        if self.nbr_audio: text += get_stats(self.nbr_audio_p, self.nbr_audio, p_len=self.p_len) + '\n'
+        text += 'Number of shares: {}\n'.format(self.nbr_shares)
+        if self.nbr_shares: text += get_stats(self.nbr_shares_p, self.nbr_shares, p_len=self.p_len) + '\n'
+
+        # Emojis
+        text += '\n' + banner('Emojis') + '\n'
+        text += 'Number of emojis: {}\n'.format(sum(self.emojis_all_count.values()))
+        text += 'Top {} emojis: {}\n'.format(self.nbr_top_emojis, list(self.top_emojis.keys()))
+        text += get_stats(self.emojis_all_count, sum(self.emojis_all_count.values()), p_len=self.p_len) + '\n'
+
+        # Reactions emojis
+        text += '\n' + banner('Reactions emojis') + '\n'
+        text += 'Number of reactions emojis: {}\n'.format(sum(self.emojis_reactions_all_count.values()))
+        text += 'Top {} reactions emojis: {}\n'.format(self.nbr_top_emojis, list(self.top_reactions_emojis.keys()))
+        text += get_stats(self.emojis_reactions_all_count, sum(self.emojis_reactions_all_count.values()), p_len=self.p_len) + '\n'
+
+        # If the text is for terminal, return wihout top words
+        if for_terminal:
+            return text
+        
+        # Top words
+        text += '\n' + banner('Top words') + '\n'
+        if len(self.p) <= 10:
+            column_width = 25
+            for i in range(0, len(self.p) + 1):
+                if i == 0:
+                    text += 'Top words'.ljust(column_width)
+                else:
+                    text += (str(i) + '. ' + self.p[i-1]).ljust(column_width)
+            text += '\n'
+            for i in range(len(list(self.top_words.keys())[:self.nbr_top_words])):
+                text += '{}. {} ({})'.format(i + 1, list(self.top_words.keys())[i], list(self.top_words.values())[i]).ljust(column_width)
+                for j, p in enumerate(self.top_words_p, 1):
+                    if i < len(list(self.top_words_p[p].keys())):
+                        text += '{} ({})'.format(list(self.top_words_p[p].keys())[i], list(self.top_words_p[p].values())[i]).ljust(column_width)
+                    else:
+                        text += ' '.ljust(column_width)
+                text += '\n'
+        else:
+            #Writing with tabulation for importing to excel
+            for i in range(0, len(self.p) + 1):
+                if i == 0:
+                    text += 'Top words\t'
+                else:
+                    text += (str(i) + '. ' + self.p[i-1]) + '\t'
+            text += '\n'
+            for i in range(len(list(self.top_words.keys())[:self.nbr_top_words])):
+                text += '{}. {} ({})'.format(i + 1, list(self.top_words.keys())[i], list(self.top_words.values())[i]) + '\t'
+                for j, p in enumerate(self.top_words_p, 1):
+                    if i < len(list(self.top_words_p[p].keys())):
+                        text += '{} ({})'.format(list(self.top_words_p[p].keys())[i], list(self.top_words_p[p].values())[i]) + '\t'
+                    else:
+                        text += ' \t'
+                text += '\n'
+        return text
     
     def generate_txt(self, print_in_terminal=False):
         # Create a text file for better readability of statistics especialy for large groups chats
         txt_filename = self.title + '.txt'
         txt_file_path = os.path.join('results', txt_filename)
+
+        text = self.make_text_statistics()
+
         with open(txt_file_path, 'w', encoding='utf8') as txt:
-            txt.write(banner('Times') + '\n')
-            txt.write('Start: {}\nEnd: {}\n'.format(self.time_start_str, self.time_end_str))
-            txt.write('Number of days: {}\n'.format(self.nbr_days))
-            txt.write('Number of active days: {} ({:.3} %)\n'.format(self.nbr_days_active, 100*self.nbr_days_active/self.nbr_days))
-            txt.write('Number of active days in row: {} ({} : {})\n'.format(self.nbr_days_active_in_row, self.time_start_days_active_in_row_str, self.time_end_days_active_in_row_str))
-            txt.write('Number of inactive days in row: {} ({} : {})\n'.format(self.nbr_days_inactive_in_row, self.time_start_days_inactive_in_row_str, self.time_end_days_inactive_in_row_str))
-            txt.write('Most messages in one day: {} ({})\n'.format(max(self.nbr_times_day), self.max_nbr_times_day_date))
-
-            txt.write(banner('Messages') + '\n')
-            txt.write('Number of messages: {}\n'.format(self.nbr_msg))
-            txt.write(get_stats(self.nbr_msg_p, self.nbr_msg) + '\n')
-
-            txt.write(banner('Words') + '\n')
-            txt.write('Number of words: {}\n'.format(self.nbr_words))
-            txt.write(get_stats(self.nbr_words_p, self.nbr_words) + '\n')
-            
-            txt.write(banner('Characters') + '\n')
-            txt.write('Number of characters: {}\n'.format(self.nbr_chars))
-            txt.write('Top {} characters: {}\n'.format(self.nbr_top_characters, list(self.top_chars.keys())[:self.nbr_top_characters]))
-            txt.write(get_stats(self.nbr_chars_p, self.nbr_chars) + '\n')
-
-            txt.write(banner('Averages') + '\n')
-            txt.write('Average messages per day: {:.1f}\n'.format(self.avg_msg_per_day))
-            txt.write('Average length of messages: {:.1f} words\n'.format(self.avg_words_per_msg))
-            txt.write('Average length of messages: {:.1f} characters\n'.format(self.avg_chars_per_msg))
-            txt.write('Average length of word: {:.1f} characters\n'.format(self.avg_chars_per_word))
-            txt.write('Average reply time: {:.1f} seconds ({:.0f}h {:.0f}min) (rejecting >1day)\n'.format(self.avg_reply_time, self.avg_reply_time // 3600, (self.avg_reply_time % 3600) // 60))
-            txt.write('Median reply time: {:.1f} seconds\n'.format(self.median_reply_time))
-            txt.write('   {: <20} {: >12} {: >12} {: >15} {: >18} {: >18}\n'.format('Participant', 'Words/msg', 'Chars/msg', 'Chars/word', 'Avg reply time', 'Median reply time'))
-            for i, p in enumerate(self.nbr_words_p, 1):
-                txt.write('{}. {: <20}: {:>5.1f} w/msg{:>8.1f} ch/msg{:>7.1f} ch/w{:>11.0f} s{:>13.0f} s\n'.format(
-                    i, p, self.avg_words_per_msg_p[p], self.avg_chars_per_msg_p[p], self.avg_chars_per_word_p[p], self.avg_reply_time_p[p], self.median_reply_time_p[p]))
-            
-            txt.write(banner('Edits') + '\n')
-            txt.write('Number of editions: {}\n'.format(self.nbr_editions))
-            #txt.write(get_stats(self.nbr_editions_p, self.nbr_editions) + '\n')
-
-            txt.write(banner('Unsent messages') + '\n')
-            txt.write('Number of unsent messages: {}\n'.format(self.nbr_unsent_msg))
-            if self.nbr_unsent_msg: txt.write(get_stats(self.nbr_unsent_msg_p, self.nbr_unsent_msg) + '\n')
-
-            txt.write(banner('Others') + '\n')
-            txt.write('Number of photos: {}\n'.format(self.nbr_photos))
-            if self.nbr_photos: txt.write(get_stats(self.nbr_photos_p, self.nbr_photos) + '\n')
-            txt.write('Number of videos: {}\n'.format(self.nbr_videos))
-            if self.nbr_videos: txt.write(get_stats(self.nbr_videos_p, self.nbr_videos) + '\n')
-            txt.write('Number of gifs: {}\n'.format(self.nbr_gifs))
-            if self.nbr_gifs: txt.write(get_stats(self.nbr_gifs_p, self.nbr_gifs) + '\n')
-            txt.write('Number of stickers: {}\n'.format(self.nbr_stickers))
-            if self.nbr_stickers: txt.write(get_stats(self.nbr_stickers_p, self.nbr_stickers) + '\n')
-            txt.write('Number of files: {}\n'.format(self.nbr_files))
-            if self.nbr_files: txt.write(get_stats(self.nbr_files_p, self.nbr_files) + '\n')
-            txt.write('Number of audio: {}\n'.format(self.nbr_audio))
-            if self.nbr_audio: txt.write(get_stats(self.nbr_audio_p, self.nbr_audio) + '\n')
-            txt.write('Number of shares: {}\n'.format(self.nbr_shares))
-            if self.nbr_shares: txt.write(get_stats(self.nbr_shares_p, self.nbr_shares) + '\n')
-
-            # Emojis
-            txt.write(banner('Emojis') + '\n')
-            txt.write('Top {} emojis: {}\n'.format(self.nbr_top_emojis, list(self.top_emojis.keys())))
-            txt.write(get_stats(self.emojis_all_count, sum(self.emojis_all_count.values())) + '\n')
-
-            # Reactions emojis
-            txt.write(banner('Reactions emojis') + '\n')
-            txt.write('Top {} reactions emojis: {}\n'.format(self.nbr_top_emojis, list(self.top_reactions_emojis.keys())))
-            txt.write(get_stats(self.emojis_reactions_all_count, sum(self.emojis_reactions_all_count.values())) + '\n')
-
-            txt.write(banner('Top words') + '\n')
-            if len(self.p) <= 10:
-                column_width = 25
-                for i in range(0, len(self.p) + 1):
-                    if i == 0:
-                        txt.write('Top words'.ljust(column_width))
-                    else:
-                        txt.write((str(i) + '. ' + self.p[i-1]).ljust(column_width))
-                txt.write('\n')
-                for i in range(len(list(self.top_words.keys())[:self.nbr_top_words])):
-                    txt.write('{}. {} ({})'.format(i + 1, list(self.top_words.keys())[i], list(self.top_words.values())[i]).ljust(column_width))
-                    for j, p in enumerate(self.top_words_p, 1):
-                        if i < len(list(self.top_words_p[p].keys())):
-                            txt.write('{} ({})'.format(list(self.top_words_p[p].keys())[i], list(self.top_words_p[p].values())[i]).ljust(column_width))
-                        else:
-                            txt.write(' '.ljust(column_width))
-                    txt.write('\n')
-            else:
-                #Writing with tabulation for importing to excel
-                for i in range(0, len(self.p) + 1):
-                    if i == 0:
-                        txt.write('Top words\t')
-                    else:
-                        txt.write((str(i) + '. ' + self.p[i-1]) + '\t')
-                txt.write('\n')
-                for i in range(len(list(self.top_words.keys())[:self.nbr_top_words])):
-                    txt.write('{}. {} ({})'.format(i + 1, list(self.top_words.keys())[i], list(self.top_words.values())[i]) + '\t')
-                    for j, p in enumerate(self.top_words_p, 1):
-                        if i < len(list(self.top_words_p[p].keys())):
-                            txt.write('{} ({})'.format(list(self.top_words_p[p].keys())[i], list(self.top_words_p[p].values())[i]) + '\t')
-                        else:
-                            txt.write(' \t')
-                    txt.write('\n')
+            txt.write(text)
 
         if print_in_terminal: print('\ntxt \'{}\' generated successfully!'.format(txt_filename))
 
@@ -808,6 +767,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             'time_end': self.time_end_str,
             'days': self.nbr_days,
             'active_days': self.nbr_days_active,
+            'active_days_in_row': self.nbr_days_active_in_row,
             'most_messages_in_one_day': max(self.nbr_times_day),
             'messages_all': self.nbr_msg,
             'messages_user': self.nbr_msg_p[user],
@@ -832,17 +792,32 @@ class FacebookChatStatistics(FacebookMessengerConversation):
             'reactions_emojis_top': top_emojis_reactions_with_count,
             'photos_all': self.nbr_photos,
             'photos_user': self.nbr_photos_p[user],
+            'videos_all': self.nbr_videos,
+            'videos_user': self.nbr_videos_p[user],
+            'audio_all': self.nbr_audio,
+            'audio_user': self.nbr_audio_p[user],
+            'msg_per_emoji': self.nbr_msg_per_nbr_emojis,
+            'msg_per_emoji_user': self.nbr_msg_per_nbr_emojis_p[user],
+            'msg_per_reaction': self.nbr_msg_per_nbr_emojis_reactions,
+            'msg_per_reaction_user': self.nbr_msg_per_nbr_emojis_reactions_p[user],
         }
-        if not os.path.isfile(user_statistics_path):
-            with open(user_statistics_path, 'w') as json_file:
+
+        if not self.using_multiprocessing:
+            self.write_json(user_statistics_path, user_statistics, user)
+        return self.title, user_statistics
+
+
+    def write_json(self, path, new_data, user):
+        if not os.path.isfile(path):
+            with open(path, 'w') as json_file:
                 json.dump({'user': user, 'conversations': {}}, json_file, indent=2)
         
-        data = json.load(open(user_statistics_path))
+        data = json.load(open(path))
         if data['user'] != user:
             print('Invalid user')
         else:
-            data['conversations'].update({self.title: user_statistics})
-            with open(user_statistics_path, 'w') as json_file:
+            data['conversations'].update({self.title: new_data})
+            with open(path, 'w') as json_file:
                 json.dump(data, json_file, indent=2)
 
 def main():
@@ -903,12 +878,13 @@ def banner(msg, ch='=', length=80):
     banner = spaced_text.center(length, ch)
     return banner
 
-def get_stats(nbr_p : dict, nbr_all : int, max_p : int = 10) -> str:
+def get_stats(nbr_p : dict, nbr_all : int, max_p : int = 10, p_len : int = 25) -> str:
     """Creates a string with the top `max_p` participants from a dictionary.
     Args:
         nbr_p (dict): Dictionary with participants and their counts, must be sorted.
         nbr_all (int): Total number.
         max_p (int): Maximum number of participants to include.
+        p_len (int): Length of participant name.
     Returns:
         str: String with the top participants.
     """
@@ -916,7 +892,7 @@ def get_stats(nbr_p : dict, nbr_all : int, max_p : int = 10) -> str:
     for i, p in enumerate(list(nbr_p.keys())[:max_p], 1):
         if nbr_p[p] == 0:
             break
-        output += ('{}. {: <20}: {} ({:.1f}%)\n'.format(i, p, nbr_p[p], 100*nbr_p[p]/nbr_all))
+        output += ('{} {} {:<4} ({:.1f}%)\n'.format(f'{i}.'.ljust(4), f'{p:}'.ljust(p_len), nbr_p[p], 100*nbr_p[p]/nbr_all))
     output = output[:-1]
     return output
 

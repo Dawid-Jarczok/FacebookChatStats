@@ -23,6 +23,7 @@ def main():
         'time_start': {},
         'days': {},
         'active_days': {},
+        'active_days_in_row': {},
         'most_messages_in_one_day': {},
         'messages_all': {},
         'messages_user': {},
@@ -30,6 +31,14 @@ def main():
         'words_per_message': {},
         'photos_all': {},
         'photos_user': {},
+        'videos_all': {},
+        'videos_user': {},
+        'audio_all': {},
+        'audio_user': {},
+        'msg_per_emoji': {},
+        'msg_per_emoji_user': {},
+        'msg_per_reaction': {},
+        'msg_per_reaction_user': {},
     }
 
     all_nbr = {
@@ -40,6 +49,10 @@ def main():
         'edits_user': 0,
         'photos_all': 0,
         'photos_user': 0,
+        'videos_all': 0,
+        'videos_user': 0,
+        'audio_all': 0,
+        'audio_user': 0,
     }
 
     for title in data['conversations']:
@@ -60,11 +73,16 @@ def main():
         for key in conv_data.keys():
             if key not in conversation.keys():
                 print(f"ERROR - no {key} in user_statistics")
+                continue
+            if key in ['msg_per_emoji', 'msg_per_reaction', 'msg_per_emoji_user', 'msg_per_reaction_user'] and conversation[key] == 0:
+                continue
             conv_data[key].update({title: conversation[key]})
         
 
     for key, elem in conv_data.items():
-        conv_data[key] = dict(sorted(elem.items(), key=lambda item: item[1], reverse=True))
+        reverse = True
+        if key in ['msg_per_emoji', 'msg_per_reaction', 'msg_per_emoji_user', 'msg_per_reaction_user']: reverse = False
+        conv_data[key] = dict(sorted(elem.items(), key=lambda item: item[1], reverse=reverse))
 
     nbr_of_max_conversations = 10
 
@@ -74,27 +92,40 @@ def main():
     l = set(l[:n] + l[-n:])
     for i, (t, e) in enumerate(conv_data['time_start'].items()):
         if i not in l: continue
-        print(f'{i+1:>4}. {e}   {t}')
+        print_dict_item(i, t, e)
 
     for key, elem in conv_data.items():
         if key == 'time_start': continue
         print(f'* {key}')
         for i, (t, e) in enumerate(list(elem.items())[:nbr_of_max_conversations]):
-            if key == 'messages_user':
-                percentage = e / conv_data['messages_all'][t] * 100
-                print(f'{i+1:>4}. {e:<6} ({percentage:.1f}%) {t}')
-            elif key == 'photos_user':
-                percentage = e / conv_data['photos_all'][t] * 100
-                print(f'{i+1:>4}. {e:<6} ({percentage:.1f}%) {t}')
+            if e == 0: continue
+            elems4percentage = {'messages_user': 'messages_all', 'photos_user': 'photos_all', 'videos_user': 'videos_all', 'audio_user': 'audio_all'}
+            if key in elems4percentage.keys():
+                print_dict_item(i, t, e, conv_data[elems4percentage[key]][t])
             else:
-                print(f'{i+1:>4}. {e:<6} {t}')
+                print_dict_item(i, t, e)
     
+    print('')
     print('---- SUM ----')
     for key, elem in all_nbr.items():
         if type(elem) == float:
             print(f'{key}: {elem:.2f}')
         else:
             print(f'{key}: {elem}')
+
+def print_dict_item(i, key, elem, all=0):
+    if type(elem) == float:
+        if all == 0:
+            print(f'{i+1:>4}. {elem:<5.2f}   {key}')
+        else:
+            p = elem / all * 100
+            print(f'{i+1:>4}. {elem:<5.2f} ({p:.1f}%)   {key}')
+    else:
+        if all == 0:
+            print(f'{i+1:>4}. {elem:<5}   {key}')
+        else:
+            p = elem / all * 100
+            print(f'{i+1:>4}. {elem:<5} ({p:.1f}%)   {key}')
 
 if __name__ == '__main__':
     main()
