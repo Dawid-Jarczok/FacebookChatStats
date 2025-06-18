@@ -59,10 +59,17 @@ If there are more files (there is limit 10000 messages in one file) then it auto
 ### Run all conversations
 Create txt, pdf and user statistics json
 ```
-python3 analize_entire_folder.py /Path/To/Conversation/inbox txt pdf user Your_name
+python3 analize_entire_folder.py /Path/To/Conversation/inbox txt pdf user Your_name run_multiprocess x
 ```
 Generating pdf files take some time, better generating them only for specific conversations using previous script\
-User statistics is json file with specific data for future analysis (maybe) so it has no usefull value for now
+User statistics is json file with specific data for future analysis (maybe) so it has no usefull value for now\
+Running multiprocess can speed up analyzing entire folder as it will be run on multiple cpu cores, x is number of created processes.
 
+
+### Run user statistics
+Analize created user statistics file.
+```
+python3 analize_user_statistics.py /results/user_statistics.json
+```
 
 ### Enjoy!
