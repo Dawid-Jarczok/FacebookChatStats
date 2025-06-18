@@ -33,7 +33,7 @@ class FacebookMessengerConversation():
         self.nbr_top_characters = nbr_top_characters
         self.max_reply_time_for_avg = max_reply_time_for_avg
 
-        max_files_number = 10
+        max_files_number = 50
         self.words_strip = ',.()?!@#$%^&*/_:;/\\"' # Characters to strip from words
         self.words_not_lower = ['xD', 'XD'] # Words that should not be lowercased
 
@@ -100,6 +100,15 @@ class FacebookMessengerConversation():
         # Number of messages from others per number of reactions for participant
         self.nbr_msg_per_nbr_emojis_reactions_p = {p: (self.nbr_msg - self.nbr_msg_p[p]) / self.emojis_reactions_all_count[p] if self.emojis_reactions_all_count[p] != 0 else 0 for p in self.p}
         self.nbr_msg_per_nbr_emojis_reactions_p = dict(sorted(self.nbr_msg_per_nbr_emojis_reactions_p.items(), key=lambda item: item[1], reverse=False))
+
+        # Words sequences
+        self.words_sequences_p_2, self.words_sequences_2 = self.__top_words_sequences(2)
+        self.words_sequences_p_3, self.words_sequences_3 = self.__top_words_sequences(3)
+        self.words_sequences_p_4, self.words_sequences_4 = self.__top_words_sequences(4)
+        self.words_sequences_p_5, self.words_sequences_5 = self.__top_words_sequences(5)
+
+        self.words_sequences = {2: self.words_sequences_2, 3: self.words_sequences_3, 4: self.words_sequences_4, 5: self.words_sequences_5}
+        self.words_sequences_p = {2: self.words_sequences_p_2, 3: self.words_sequences_p_3, 4: self.words_sequences_p_4, 5: self.words_sequences_p_5}
         return 0
 
     
@@ -590,6 +599,51 @@ class FacebookMessengerConversation():
                            key=lambda kv: (-kv[1], kv[0]))} for p in self.p}
         self.top_words = {word_key: count for word_key, count in sorted(words.items(),
                            key=lambda kv: (-kv[1], kv[0]))}
+
+    def __top_words_sequences(self, n=2):
+        """Creates a dictionary of word sequences used by participants in messages and sorts them by count.
+        This method processes the messages in the conversation data to identify sequences of words (of length `n`)
+        used by each participant. It returns two dictionaries: one containing the word sequences for each participant
+        and another containing the overall word sequences across all participants.
+        Args:
+            n (int): The length of the word sequences to be considered. Default is 2 - sequence from 2 words.
+        Returns:
+            tuple: A tuple containing two dictionaries:
+                - top_words_sequences_p (dict): A dictionary where the keys are participant names and the values are
+                  dictionaries of word sequences and their counts, sorted by count in descending order.
+                - top_words_sequences (dict): A dictionary of overall word sequences and their counts, sorted by count
+                  in descending order.
+        """
+        words_p = {p: {} for p in self.p}
+        words = {}
+        for message in self.data['messages']:
+            if 'content' not in message:
+                continue
+            try:
+                msg : str = message['content']
+                sender = message['sender_name']
+                words_lst = msg.split()
+                if len(words_lst) < n:
+                    continue
+                words_lst = [word.lower().strip(self.__emojis_str + self.words_strip) for word in words_lst]
+                for i in range(len(words_lst) - n + 1):
+                    if '' in words_lst[i:i+n]:
+                        continue
+                    words_seq = ' '.join(words_lst[i:i+n])
+                    if words_seq not in words_p[sender]:
+                        words_p[sender][words_seq] = 0
+                    if words_seq not in words:
+                        words[words_seq] = 0
+                    words_p[sender][words_seq] += 1
+                    words[words_seq] += 1
+            except KeyError:
+                pass
+
+        top_words_sequences_p = {p: {word_key: count for word_key, count in sorted(words_p[p].items(),
+                           key=lambda kv: (-kv[1], kv[0]))} for p in self.p}
+        top_words_sequences = {word_key: count for word_key, count in sorted(words.items(),
+                           key=lambda kv: (-kv[1], kv[0]))}
+        return top_words_sequences_p, top_words_sequences
 
     def top_participants_in_messages(self, nbr):
         """Returns the top `nbr` participants who sent the most messages, last is rest

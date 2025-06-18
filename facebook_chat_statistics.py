@@ -23,6 +23,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
         self.analysis_result = super().__init__(path_to_conversation, 10, 40, 10, min_nbr_msg=self.min_nbr_msg)
         self.max_participants_on_plots = 10
         self.pdf_fonts = ['Arial', 'Segoe UI Emoji']
+        #self.pdf_fonts = ['DejaVu Sans', 'Noto Sans']
 
         self.using_multiprocessing = using_multiprocessing
 
@@ -701,6 +702,13 @@ class FacebookChatStatistics(FacebookMessengerConversation):
         text += 'Number of reactions emojis: {}\n'.format(sum(self.emojis_reactions_all_count.values()))
         text += 'Top {} reactions emojis: {}\n'.format(self.nbr_top_emojis, list(self.top_reactions_emojis.keys()))
         text += get_stats(self.emojis_reactions_all_count, sum(self.emojis_reactions_all_count.values()), p_len=self.p_len) + '\n'
+
+        # Words sequences
+        text += '\n' + banner('Words sequences') + '\n'
+        for words_num in [2, 3, 4, 5]:
+            text += 'Top {} words {} seq:\n'.format(10, words_num)
+            for i, (seq, count) in enumerate(list(self.words_sequences[words_num].items())[:10]):
+                text += '{: >4} {} {}\n'.format(f'{i+1}.'.ljust(4), f'({count})'.ljust(6), seq)
 
         # If the text is for terminal, return wihout top words
         if for_terminal:
