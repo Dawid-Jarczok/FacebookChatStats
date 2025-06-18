@@ -33,7 +33,7 @@ class FacebookMessengerConversation():
         self.nbr_top_characters = nbr_top_characters
         self.max_reply_time_for_avg = max_reply_time_for_avg
 
-        max_files_number = 10
+        max_files_number = 50
         self.words_strip = ',.()?!@#$%^&*/_:;/\\"' # Characters to strip from words
         self.words_not_lower = ['xD', 'XD'] # Words that should not be lowercased
 

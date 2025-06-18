@@ -23,6 +23,7 @@ class FacebookChatStatistics(FacebookMessengerConversation):
         self.analysis_result = super().__init__(path_to_conversation, 10, 40, 10, min_nbr_msg=self.min_nbr_msg)
         self.max_participants_on_plots = 10
         self.pdf_fonts = ['Arial', 'Segoe UI Emoji']
+        #self.pdf_fonts = ['DejaVu Sans', 'Noto Sans']
 
         self.using_multiprocessing = using_multiprocessing
 
