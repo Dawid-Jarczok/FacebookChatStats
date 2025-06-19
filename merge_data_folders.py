@@ -74,6 +74,9 @@ def copy_folder(src, dst):
 
         # Newest messages are in 1st file, on the top
         all_messages = src_messages + dst_messages
+        if len(all_messages) == 0:
+            pb.printProgressBar()
+            continue
         data = join_json_files(all_messages)
 
         # Remove duplicates from participants

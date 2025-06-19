@@ -72,4 +72,13 @@ Analize created user statistics file.
 python3 analize_user_statistics.py /results/user_statistics.json
 ```
 
+### Merge multiple folders
+If you downloaded multiple files you can merge that using command below:
+```
+python3 merge_data_folders.py /Path/To/Destination/Folder /Path/To/Source/Folder
+```
+Path must be to folder containing inbox subfolder. Command copy all messages data, photos, videos, etc.\
+If you have previously downloaded data and want to have current data, you don't have to download everything. Just download data from the time period you don't have and use this command to merge the data.\
+Remember that fb sometimes puts data in folder e2ee_cutover instead of inbox. You can also use that comand to merge that folder.
+
 ### Enjoy!
