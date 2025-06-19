@@ -60,7 +60,11 @@ class FacebookMessengerConversation():
                     break
             #print("Readed {} files".format(file_number))
 
-        self.title = str(self.data['title']).encode('raw_unicode_escape').decode('utf-8')
+        if 'title' in self.data.keys():
+            self.title = str(self.data['title']).encode('raw_unicode_escape').decode('utf-8')
+        else:
+            conversation_name = conversation.split('\\')[-1]
+            self.title = f'No title - {conversation_name}'
 
         all_messages_str = ''.join([msg['content'] for msg in self.data['messages'] if 'content' in msg])
         self.__emojis_str = ''.join([emoji.emojize(c) for c in emoji.EMOJI_UNICODE.values() if c in all_messages_str]) # All used emojis in string
@@ -196,9 +200,10 @@ class FacebookMessengerConversation():
         new_data['participants'].extend(data_2['participants'])
         new_data['messages'].extend(data_2['messages'])
         new_data['magic_words'].extend(data_2['magic_words'])
-        if new_data['title'] != data_2['title']:
-            new_data['title'] = "multiple conversations"
-            new_data.pop('thread_path')
+        if 'title' in new_data.keys() and 'title' in data_2.keys():
+            if new_data['title'] != data_2['title']:
+                new_data['title'] = "multiple conversations"
+                new_data.pop('thread_path')
         return new_data
 
     def __time_interval(self):

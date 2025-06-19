@@ -849,15 +849,14 @@ def main():
 
     fb = FacebookChatStatistics(path_to_conversation)
 
-    if len(fb.p) == 0:
-        print('{} No participants found in the conversation.'.format(fb.title))
+    if fb.analysis_result == 1:
+        print('No participants found in the conversation.')
+        sys.exit()
+    elif fb.analysis_result == 2:
+        print('Not enough messages to generate statistics.')
         sys.exit()
     
     fb.print_in_terminal()
-    
-    if fb.nbr_msg < 10:
-        print(fb.title, ' Not enough messages to generate statistics.')
-        sys.exit()
     
     fb.generate_pdf(True)
     fb.generate_txt(True)
